@@ -155,16 +155,17 @@ A projekt során több API-t is felhasználok. Az ezekkel való kommunikáció �
 
 ---
 
-A projekt hat mérföldkövet tartalmaz, melyek a következők:
+A projekt hét mérföldkövet tartalmaz, melyek a következők:
 
 | Mérföldkő | Megnevezés                          | Határidő   | Állapot        |
 |-----------|-------------------------------------|------------|----------------|
 | M1        | Dokumentáció, projekt előkészítés   | 2024-10-20 | Folyamatban    |
 | M2        | Alap funkciók                       | 2024-11-20 | Nincs elkezdve |
 | M3        | Rangrendszer                        | 2024-12-10 | Nincs elkezdve |
-| M4        | Kibővített Chat funkciók            | 2024-12-20 | Nincs elkezdve |
-| M5        | Automatizált funkciók               | 2025-01-10 | Nincs elkezdve |
-| M6        | Egyéb, alacsony prioritású funkciók | 2025-01-20 | Nincs elkezdve |
+| M4        | Áttérés felhőszolgáltatásra         | 2024-12-15 | Nincs elkezdve |
+| M5        | Kibővített Chat funkciók            | 2024-12-20 | Nincs elkezdve |
+| M6        | Automatizált funkciók               | 2025-01-10 | Nincs elkezdve |
+| M7        | Egyéb, alacsony prioritású funkciók | 2025-01-20 | Nincs elkezdve |
 
 ---
 
