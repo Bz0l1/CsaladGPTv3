@@ -138,7 +138,7 @@ A projekt során több API-t is felhasználok. Az ezekkel való kommunikáció �
 - [IGDB API](https://api-docs.igdb.com/)
 - [Trace.moe API](https://soruly.github.io/trace.moe-api/)
 - [Discord API](https://discord.com/developers/docs/intro)
-- [StableDiffusion API](valami.com)
+- [StableDiffusion API]()
 
 ---
 
@@ -185,7 +185,7 @@ A projekt hét mérföldkövet tartalmaz, melyek a következők:
 
 ---
 
-Még nincs elkészítve.
+![Class diagram](./docs/class.png)
 
 ---
 
