@@ -200,7 +200,7 @@ A projekt hét mérföldkövet tartalmaz, melyek a következők:
 
 ---
 
-Még nincs elkészítve.
+![Package diagram](./docs/package.png)
 
 ---
 
