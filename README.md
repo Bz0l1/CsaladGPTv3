@@ -208,7 +208,7 @@ A projekt hét mérföldkövet tartalmaz, melyek a következők:
 
 ---
 
-Még nincs elkészítve.
+![Entity diagram](./docs/entity.png)
 
 ---
 
