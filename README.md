@@ -192,7 +192,7 @@ A projekt hét mérföldkövet tartalmaz, melyek a következők:
 ### 7.3 Sequence diagram
 
 ---
-Még nincs elkészítve.
+![Sequence diagram](./docs/sequence.png)
 
 ---
 
