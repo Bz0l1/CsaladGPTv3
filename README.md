@@ -159,7 +159,7 @@ A projekt hét mérföldkövet tartalmaz, melyek a következők:
 
 | Mérföldkő | Megnevezés                          | Határidő   | Állapot        |
 |-----------|-------------------------------------|------------|----------------|
-| M1        | Dokumentáció, projekt előkészítés   | 2024-10-20 | Folyamatban    |
+| M1        | Dokumentáció, projekt előkészítés   | 2024-10-20 | Teljesítve     |
 | M2        | Alap funkciók                       | 2024-11-20 | Nincs elkezdve |
 | M3        | Rangrendszer                        | 2024-12-10 | Nincs elkezdve |
 | M4        | Áttérés felhőszolgáltatásra         | 2024-12-15 | Nincs elkezdve |
