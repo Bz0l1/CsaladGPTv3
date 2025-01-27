@@ -3,6 +3,7 @@ from discord import app_commands
 from discord.ext import commands
 
 from source.command_service_handler.command_service import CommandService
+from source.file_service_handler.file_reader import get_token
 
 
 class CommandHandler:
@@ -13,37 +14,30 @@ class CommandHandler:
     def register_commands(self) -> None:
         @app_commands.command(name="ping", description="Ping parancs")
         async def ping(interaction: discord.Interaction) -> None:
-            command_service: CommandService = CommandService(interaction)
+            command_service: CommandService = CommandService(interaction=interaction)
             await command_service.ping()
-
 
         @app_commands.command(name="help", description="Parancsok listázása")
         async def help(interaction: discord.Interaction, command: str | None = None) -> None:
-            command_service: CommandService = CommandService(interaction)
+            command_service: CommandService = CommandService(interaction=interaction)
             await command_service.help(command=command)
 
-        """
         @app_commands.command(name="gogu", description="Étesítést küld ha Gogu streamel")
         async def gogu(interaction: discord.Interaction) -> None:
-            cha_id: int = int(get_token("STREAM_ALERT_TEST_CHANNEL_ID"))
+            cha_id: int = int(get_token("DISCORD_TEST_STREAM_CHANNEL_ID"))
             message: discord.Message = interaction.message
             channel_id: discord.TextChannel = self._bot.get_channel(cha_id)
 
             if interaction.channel.id == channel_id.id:
-                command_service: CommandService = CommandService(interaction)
-                embed: discord.Embed | None = await command_service.gogu()
+                command_service: CommandService = CommandService(interaction=interaction)
 
-                if embed is not None:
-                    await interaction.response.send_message(content="@everyone", embed=embed)
-                    await interaction.channel.send("https://tenor.com/view/alert-siren-warning-light-gif-15160785")
-                else:
-                    await interaction.response.send_message(content="Hiba történt a YouTube API-val.", ephemeral=True,
-                                                            delete_after=10)
+                await command_service.gogu()
             else:
                 await interaction.response.send_message(
                     content=f"Ezt a parancsot csak a <#{cha_id}> szobában használhatod.\n"
                             "```/help gogu```", delete_after=10, ephemeral=True)
 
+        """
         @app_commands.command(name="ima", description="Bibliai idézetet mond")
         async def ima(interaction: discord.Interaction, *, nyelv: str | None = None) -> None:
             cha_id: int = int(get_token("IMA_TEST_CHANNEL_ID"))
@@ -276,6 +270,6 @@ class CommandHandler:
             
         """
 
-        discord_commands = [ping, help]
+        discord_commands = [ping, help, gogu]
         for command in discord_commands:
             self._bot.tree.add_command(command)
