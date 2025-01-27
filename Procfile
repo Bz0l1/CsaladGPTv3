@@ -1,0 +1,1 @@
+web: cd source && python bot.py

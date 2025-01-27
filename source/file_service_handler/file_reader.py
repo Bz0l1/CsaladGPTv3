@@ -5,7 +5,6 @@ import os
 import json
 
 load_dotenv()
-
 BASE_DIR = Path(__file__).resolve().parent.parent
 local_db_path = os.path.join(BASE_DIR, "database_service_handler", "local_database")
 
