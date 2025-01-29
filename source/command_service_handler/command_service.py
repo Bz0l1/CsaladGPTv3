@@ -5,10 +5,11 @@ import discord
 from discord.ext import commands
 from datetime import datetime
 
-from numpy.lib.utils import source
-
 from source.file_service_handler.file_reader import read_json
 from source.submode_services_handler.youtube_api import is_channel_live
+from source.submode_services_handler.quoting import read_bible
+from source.file_service_handler.file_writer import save_ima_date_time, save_percek
+from source.file_service_handler.file_reader import get_token, read_txt
 
 
 def create_embed(*, title: str = None, description: str = None, image_url: str = None, thumbnail_url: str = None,
@@ -28,6 +29,7 @@ class CommandService:
     def __init__(self, *, interaction: discord.Interaction | None = None, bot: commands.Bot | None = None) -> None:
         self.interaction: discord.Interaction | None = interaction
         self.bot_client: discord.Client | None = (interaction.client if interaction is not None else None)
+        self._commands_bot = bot
         self.bot_for_automatization: commands.Bot | None = bot
 
     async def ping(self) -> None:
@@ -106,9 +108,10 @@ class CommandService:
         await self.interaction.response.send_message(embed=embed)
 
     async def gogu(self) -> None:
-        url: str | None = is_channel_live()
+        is_command: bool = self.interaction is not None and self.bot_for_automatization is None
+        print(is_command)
+        url: str | None = is_channel_live(is_command=is_command)
         is_live: bool = url is not None
-        print(url, is_live)
 
         if not is_live:
             title: str = "**NINCS STREAM**"
@@ -131,27 +134,141 @@ class CommandService:
                                    footer_text=footer_text, thumbnail_url=thumbnail_url))
         elif self.bot_for_automatization is not None:
             if is_live:
-                channel: discord.TextChannel = self.bot_for_automatization.get_channel(1173567590044549150)
+                channel: discord.TextChannel = self.bot_for_automatization.get_channel(
+                    int(get_token("DISCORD_TEST_STREAM_CHANNEL_ID")))
                 await channel.send(
                     embed=create_embed(title=title, description=description, color=color, timestamp=timestamp,
                                        footer_text=footer_text, thumbnail_url=thumbnail_url))
 
+    async def ima(self, nyelv: str | None) -> None:
+        is_command: bool = self.interaction is not None and self.bot_for_automatization is None
+        if not is_command:
+            date_from_file: str | datetime = read_txt("ima_date_time")
+            date_str = date_from_file.strip()
+            date_from_file = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f")
+
+            if (datetime.now() - date_from_file).days < 1:
+                return
+
+        verse, lang = read_bible(lang=nyelv)
+
+        title: str = "🙏 Ima 🙏" if is_command else "🙏 Napi Ima 🙏"
+        description: str = verse
+        color: int = random.randint(0, 0xFFFFFF)
+        timestamp: datetime = datetime.now()
+        footer_text: str = "Ámen 🙏" if lang == "hu" else "Amen 🙏" if lang in ("en", "es") else "アーメン 🙏"
+        thumbnail_url: str = "https://cdn.discordapp.com/attachments/1205275317682442320/1239558620471885825/aacbe7e2c0844e43a3009cef9a89d899.jpg?ex=66435c6d&is=66420aed&hm=25d8ae669bd928cb45ed6268883217606c2c6e6ecce68815fe06d7b8a1b4bf2f&"
+        print(str(timestamp))
+
+        if not is_command:
+            save_ima_date_time(time=timestamp.isoformat())
+            channel: discord.TextChannel = self.bot_for_automatization.get_channel(
+                int(get_token("DISCORD_TEST_IMA_CHANNEL_ID")))
+            await channel.send(
+                embed=create_embed(title=title, description=description, color=color, timestamp=timestamp,
+                                   footer_text=footer_text, thumbnail_url=thumbnail_url))
+        else:
+            await self.interaction.response.send_message(
+                embed=create_embed(title=title, description=description, color=color, timestamp=timestamp,
+                                   footer_text=footer_text, thumbnail_url=thumbnail_url))
+
+    async def percek(self) -> None:
+        data: str = read_txt("percek")
+        embed: discord.Embed = create_embed(title=f"{data} perc")
+
+        to_day: int = int(data) // (24 * 60)
+        to_hour: int = (int(data) // 60) % 24
+        to_video: int = int(int(data) // (51 + (33 / 60)))
+
+        embed.add_field(value=f"{to_day} nap", inline=True, name="")
+        embed.add_field(value=f"{to_hour} óra", inline=True, name="")
+        embed.add_field(value=f"{to_video} [Selchris videó](https://youtu.be/tdiGFvMFLMs?si=LUnAQ6N3DewteLzZ)",
+                        inline=False, name="")
+        await self.interaction.response.send_message(embed=embed)
+
+    async def setperc(self, amount: str) -> None:
+        save_percek(amount)
+        await self.interaction.response.send_message(
+            embed=create_embed(title=f"A perc számláló módosítva: {amount} percre"))
+
+    async def javaslat(self, *, theme: str) -> None:
+        if theme == "bot":
+            user_id = int(get_token("DEV_USER_ID"))
+            user = await self.bot_client.fetch_user(user_id)
+            if user:
+                try:
+                    await user.send("Új javaslat érkezett a botról!")
+                    await self.interaction.response.send_message("Javaslat elküldve a fejlesztőnek DM-ben!",
+                                                                 ephemeral=True)  # Visszajelzés a felhasználónak
+                except discord.Forbidden:
+                    await self.interaction.response.send_message(
+                        "Nem tudtam DM-et küldeni a fejlesztőnek. Lehet, hogy le van tiltva.", ephemeral=True)
+                except Exception as e:
+                    await self.interaction.response.send_message(f"Hiba történt a DM küldésekor: {e}", ephemeral=True)
+            else:
+                await self.interaction.response.send_message("Nem találtam a fejlesztőt.", ephemeral=True)
+
+        elif theme == "szerver":
+            class JavaslatModal(discord.ui.Modal):
+                javaslat: discord.ui.TextInput = discord.ui.TextInput(
+                    label='Javaslat',
+                    placeholder='Írd ide a javaslatod',
+                    style=discord.TextStyle.long,
+                    required=True
+                )
+                kuldo: discord.ui.TextInput = discord.ui.TextInput(
+                    label='Küldő',
+                    placeholder='Írd ide a neved (nem kötelező)',
+                    required=False
+                )
+
+                def __init__(self, bot_client: commands.Bot):
+                    super().__init__(title='Javaslat beküldése')
+                    self.bot_client = bot_client
+
+                async def on_submit(self, interaction: discord.Interaction):
+                    javaslat_szoveg = self.javaslat.value
+                    kudo_szoveg = self.kuldo.value or "Egy névtelen családtag"
+
+                    channel_id = int(get_token("DISCORD_TEST_SUGGESTION_CHANNEL_ID"))
+                    channel = self.bot_client.get_channel(channel_id)
+
+                    if channel:
+                        embed = create_embed(
+                            title="Új javaslat érkezett!",
+                            description=f"**Javaslat:** {javaslat_szoveg}\n\n**Küldő:** {kudo_szoveg}",
+                            color=0x00FF00,
+                            timestamp=datetime.now()
+                        )
+                        try:
+                            await channel.send(embed=embed)
+                            await interaction.response.send_message("Javaslat sikeresen elküldve!", ephemeral=True,
+                                                                    delete_after=5)
+                        except Exception as e:
+                            await interaction.response.send_message(f"Hiba történt a javaslat elküldésekor: {e}",
+                                                                    ephemeral=True, delete_after=5)
+                    else:
+                        await interaction.response.send_message("Nem találtam a javaslatok csatornáját.",
+                                                                ephemeral=True, delete_after=5)
+
+            modal = JavaslatModal(self._commands_bot)
+            await self.interaction.response.send_modal(modal)
+
 
 """
+async def convert(self, from_currency: str, amount: int) -> str:
+    if from_currency == "perc":
+        forint_value = amount * 200
+        formatted_forint = f'{forint_value:,}'.replace(',', '.')
+        return f"{formatted_forint} gulden"
 
-async def ima(self, prefix: str | None) -> discord.Embed:
-    verse, lang = self.quoting.read_bible(prefix)
-    title: str = "Ima"
-    description: str = verse
-    color: int = 0xffffff
-    timestamp: datetime = datetime.now()
-    footer_text: str = "Ámen 🙏" if lang == "hu" else "Amen 🙏" if lang in ("en", "es") else "アーメン 🙏"
+    else:
+        minute_value = amount / 200
+        hour_value = minute_value / 60
+        return f'{amount} gulden = {minute_value:.2f} perc = {hour_value:.2f} óra'
+"""
 
-    thumbnail_url: str = "https://cdn.discordapp.com/attachments/1205275317682442320/1239558620471885825/aacbe7e2c0844e43a3009cef9a89d899.jpg?ex=66435c6d&is=66420aed&hm=25d8ae669bd928cb45ed6268883217606c2c6e6ecce68815fe06d7b8a1b4bf2f&"
-
-    return create_embed(title=title, description=description, color=color, timestamp=timestamp,
-                        footer_text=footer_text, thumbnail_url=thumbnail_url)
-
+"""
 async def insult(self, *, user: discord.Member | None = None, role: discord.Role | None = None, author) -> str:
     if user is None and role is None:
         return (f"{self.interaction.user.mention} megsértette saját magát:\n"
@@ -187,36 +304,9 @@ async def insult(self, *, user: discord.Member | None = None, role: discord.Role
 
 async def jimmy(self) -> str:
     return self.quoting.read_jimmy()
+"""
 
-async def percek(self) -> discord.Embed:
-    data: str = self.file_handler.read_txt("percek.txt")
-    embed: discord.Embed = create_embed(title=f"{data} perc")
-
-    to_day: int = int(data) // (24 * 60)
-    to_hour: int = (int(data) // 60) % 24
-    to_video: int = int(int(data) // (51 + (33 / 60)))
-
-    embed.add_field(value=f"{to_day} nap", inline=True, name="")
-    embed.add_field(value=f"{to_hour} óra", inline=True, name="")
-    embed.add_field(value=f"{to_video} [Selchris videó](https://youtu.be/tdiGFvMFLMs?si=LUnAQ6N3DewteLzZ)",
-                    inline=False, name="")
-    return embed
-
-async def convert(self, from_currency: str, amount: int) -> str:
-    if from_currency == "perc":
-        forint_value = amount * 200
-        formatted_forint = f'{forint_value:,}'.replace(',', '.')
-        return f"{formatted_forint} gulden"
-
-    else:
-        minute_value = amount / 200
-        hour_value = minute_value / 60
-        return f'{amount} gulden = {minute_value:.2f} perc = {hour_value:.2f} óra'
-
-async def setperc(self, amount: int) -> str:
-    self.file_handler.write_txt("percek.txt", str(amount))
-    return f"Beállítottad a percek számát: {amount}"
-
+"""
 async def say(self, *, role: str, prompt: str = "", model: str = "gpt3") -> str | bool:
     if self.gpt.get_gpt(role) == {}:
         return False

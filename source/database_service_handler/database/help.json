@@ -1,0 +1,81 @@
+{
+  "common": {
+    "commands": [
+      {
+        "name": "/ping",
+        "short_description": "Pingeli a botot",
+        "description": "Használd ezt a parancsot, hogy ellenőrizd, hogy a bot működik-e.\n__Használat:__\n\n```/ping```"
+      },
+      {
+        "name": "/gogu",
+        "short_description": "Értesítést küld hogy Gogu streamel-e",
+        "description": "Használd ezt a parancsot, hogy értesítést kapj, amikor Gogu streamel.\n__Használat:__\n\n```/gogu```"
+      },
+      {
+        "name": "/ima",
+        "short_description": "Mond egy random bibliai idézetet",
+        "description": "Használd ezt a parancsot, hogy egy random bibliai idézetet kapj.\n__Használat:__\n\n> Alap eset:\n```/ima```\n\n> Nyelv megadása:\n```/ima <hu|jp|es|en>```"
+      },
+      {
+        "name": "/insult",
+        "short_description": "Sértést mond; NEM AKTÍV",
+        "description": "Használd ezt a parancsot hogy megsérts valakit, vagy épp magadat.\n__Használat:__\n\n> Hogy magadat sértsd meg: \n```/insult```\n\n> Hogy egy felhasználót sérts meg:\n```/insult {@user}```\n\n> Hogy egy adott role-al rendelkező felhasznáókat sérts meg:\n```/insult {@role}```"
+      },
+      {
+        "name": "/jimmy",
+        "short_description": "Zámbó Jimmy idézeteket mond; NEM AKTÍV",
+        "description": "Használd ezt a parancsot, hogy Zámbó Jimmy idézeteket kapj.\n__Használat:__\n\n```/jimmy```"
+      },
+      {
+        "name": "/percek",
+        "short_description": "Kiírja, hogy hány perc van hátra a stream végéig",
+        "description": "Használd ezt a parancsot, hogy megtudd, hány perc van hátra a stream végéig.\n__Használat:__\n\n```/percek```"
+      },
+      {
+        "name": "/setperc",
+        "short_description": "Új percek beállítása",
+        "description": "Használd ezt a parancsot, hogy beállítsd a percek számát.\n__Használat:__\n\n```/setperc <szám>```"
+      },
+      {
+        "name": "/convert",
+        "short_description": "Átváltja a perceket guldenné vagy a guldent percekre; NEM AKTÍV",
+        "description": "Használd ezt a parancsot, hogy átváltsd a perceket guldenné vagy a guldent percekre.\n__Használat:__\n\n> Alap eset (1 perc -> gulden):\n```/convert```\n\n> Percek átváltása:\n```/convert <perc> {szam}```\n\n> Gulden átváltása:\n```/convert <gulden> {szam}```"
+      },
+      {
+        "name": "/javaslat",
+        "short_description": "Javaslatot lehet küldeni a gondozóknak",
+        "description": "Használd ezt a parancsot, hogy javaslatot küldj a gondozóknak.\n__Használat:__\n\n```/javaslat <javaslat>```"
+      },
+      {
+        "name": "/xp",
+        "short_description": "Megmondja, hogy mennyi xp-d van; NEM AKTÍV",
+        "description": "Használd ezt a parancsot, hogy megtudd, mennyi xp-d van.\n__Használat:__\n\n```/xp```"
+      },
+      {
+        "name": "/say",
+        "short_description": "*CsaládGPT* használata; NEM AKTÍV",
+        "description": "Tegyél fel egy kérdést ***CsaládGPT***-nek és hogy milyen szerepben válaszoljon (``/roles``), és ő megpróbál válaszolni rá.\n__Használat:__\n\n> Egyszerű kérdés:\n```/say <szerep> <kérdés>```\n\n> gpt model megadása:\n```/say <model> <szerep> <kérdés>```\n\n***___GPT 4 használata csak level 3+ számára elérhető/___***"
+      },
+      {
+        "name": "/roles",
+        "short_description": "Szerepek listája; NEM AKTÍV",
+        "description": "Használd ezt a parancsot, hogy megtudd, milyen szerepekben tud válaszolni ***CsaládGPT***.\n__Használat:__\n\n```/roles```"
+      },
+      {
+        "name": "/newrole",
+        "short_description": "Új szerep hozzáadása; NEM AKTÍV",
+        "description": "Használd ezt a parancsot, hogy új szerepet adj hozzá ***CsaládGPT***-hez.\n__Használat:__\n\n```/newrole <név> <szerep> <leírás: opcionális>```"
+      },
+      {
+        "name": "/deleterole",
+        "short_description": "Szerep törlése; NEM AKTÍV",
+        "description": "Használd ezt a parancsot, hogy törölj egy szerepet.\n__Használat:__\n\n```/deleterole <név>```"
+      },
+      {
+        "name": "/bejelentes",
+        "short_description": "Bejelentést lehet tenni; NEM AKTÍV",
+        "description": "Használd ezt a parancsot, hogy bejelentést tegyél.\nA gondozók korlátlanul tehetnek bejelentéseket, mindenki másnak legalább 2-es szintűnek kell lennie ahhoz hogy bejelentést tehessen.\n__Használat:__\n\n```/bejelentes```"
+      }
+    ]
+  }
+}

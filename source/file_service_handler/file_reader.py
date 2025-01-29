@@ -6,7 +6,7 @@ import json
 
 load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
-local_db_path = os.path.join(BASE_DIR, "database_service_handler", "local_database")
+local_db_path = os.path.join(BASE_DIR, "database_service_handler", "database")
 
 def get_token(token_name: str) -> str:
     token: str = os.getenv(token_name)
