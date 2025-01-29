@@ -1,6 +1,7 @@
 import time
 import asyncio  # Add this import
 import discord
+import random
 from discord import Message
 from discord.ext import commands
 
@@ -26,7 +27,8 @@ class Bot(commands.Bot):
         await self.change_presence(activity=discord.Game(name="/help | z0l1"))
         await channel.send("Szia Család!")
 
-        await self.loop.create_task(self.youtube_automatization())
+        self.loop.create_task(self.youtube_automatization())
+        self.loop.create_task(self.ima_automatization())
 
     async def on_interaction(self, interaction: discord.Interaction) -> None:
         pass
@@ -39,6 +41,12 @@ class Bot(commands.Bot):
         while True:
             await command_service.gogu()
             await asyncio.sleep(350)
+
+    async def ima_automatization(self) -> None:
+        commands_service: CommandService = CommandService(bot=self)
+        while True:
+            await commands_service.ima(nyelv=None)
+            await asyncio.sleep(5000)
 
 
 if __name__ == '__main__':
