@@ -20,7 +20,7 @@ def is_channel_live(*, is_command: bool) -> str | None:
         if saved_time is not None and (time.time() - saved_time) < 25200:
             return None
 
-    channel_id = get_token("YOUTUBE_TEST_CHANNEL_ID")
+    channel_id = get_token("YOUTUBE_CHANNEL_ID")
     api_key = get_token("YOUTUBE_API_KEY")
 
     try:

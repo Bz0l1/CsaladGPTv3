@@ -120,25 +120,27 @@ class CommandService:
             timestamp: datetime = datetime.now()
             footer_text: str = "STREAM"
             thumbnail_url: str = "https://cdn.discordapp.com/emojis/1151964870787481722.webp?size=96"
+            alert_gif = None
         else:
             title: str = "**STREAM VAN**"
-            description: str = f"Megjött Fater/\nGyere, csatlakozz:\n{url}"
+            description: str = f"Megjött Fater\nGyere, csatlakozz:\n{url}"
             color: int = 0x00f510
             timestamp: datetime = datetime.now()
             footer_text: str = "STREAM"
             thumbnail_url: str = "https://cdn.discordapp.com/emojis/1151964914274013274.webp?size=160&quality=lossless"
+            alert_gif = "https://tenor.com/view/alert-siren-warning-light-gif-15160785"
 
         if self.interaction is not None:
             await self.interaction.response.send_message(
                 embed=create_embed(title=title, description=description, color=color, timestamp=timestamp,
-                                   footer_text=footer_text, thumbnail_url=thumbnail_url))
+                                   footer_text=footer_text, thumbnail_url=thumbnail_url, image_url=alert_gif))
         elif self.bot_for_automatization is not None:
             if is_live:
                 channel: discord.TextChannel = self.bot_for_automatization.get_channel(
-                    int(get_token("DISCORD_TEST_STREAM_CHANNEL_ID")))
+                    int(get_token("DISCORD_STREAM_CHANNEL_ID")))
                 await channel.send(
                     embed=create_embed(title=title, description=description, color=color, timestamp=timestamp,
-                                       footer_text=footer_text, thumbnail_url=thumbnail_url))
+                                       footer_text=footer_text, thumbnail_url=thumbnail_url, image_url=alert_gif))
 
     async def ima(self, nyelv: str | None) -> None:
         is_command: bool = self.interaction is not None and self.bot_for_automatization is None
@@ -163,7 +165,7 @@ class CommandService:
         if not is_command:
             save_ima_date_time(time=timestamp.isoformat())
             channel: discord.TextChannel = self.bot_for_automatization.get_channel(
-                int(get_token("DISCORD_TEST_IMA_CHANNEL_ID")))
+                int(get_token("DISCORD_IMA_CHANNEL_ID")))
             await channel.send(
                 embed=create_embed(title=title, description=description, color=color, timestamp=timestamp,
                                    footer_text=footer_text, thumbnail_url=thumbnail_url))
@@ -192,45 +194,30 @@ class CommandService:
             embed=create_embed(title=f"A perc számláló módosítva: {amount} percre"))
 
     async def javaslat(self, *, theme: str) -> None:
-        if theme == "bot":
-            user_id = int(get_token("DEV_USER_ID"))
-            user = await self.bot_client.fetch_user(user_id)
-            if user:
-                try:
-                    await user.send("Új javaslat érkezett a botról!")
-                    await self.interaction.response.send_message("Javaslat elküldve a fejlesztőnek DM-ben!",
-                                                                 ephemeral=True)  # Visszajelzés a felhasználónak
-                except discord.Forbidden:
-                    await self.interaction.response.send_message(
-                        "Nem tudtam DM-et küldeni a fejlesztőnek. Lehet, hogy le van tiltva.", ephemeral=True)
-                except Exception as e:
-                    await self.interaction.response.send_message(f"Hiba történt a DM küldésekor: {e}", ephemeral=True)
-            else:
-                await self.interaction.response.send_message("Nem találtam a fejlesztőt.", ephemeral=True)
+        class JavaslatModal(discord.ui.Modal):
+            javaslat: discord.ui.TextInput = discord.ui.TextInput(
+                label='Javaslat',
+                placeholder='Írd ide a javaslatod',
+                style=discord.TextStyle.long,
+                required=True
+            )
+            kuldo: discord.ui.TextInput = discord.ui.TextInput(
+                label='Küldő',
+                placeholder='Írd ide a neved (nem kötelező)',
+                required=False
+            )
 
-        elif theme == "szerver":
-            class JavaslatModal(discord.ui.Modal):
-                javaslat: discord.ui.TextInput = discord.ui.TextInput(
-                    label='Javaslat',
-                    placeholder='Írd ide a javaslatod',
-                    style=discord.TextStyle.long,
-                    required=True
-                )
-                kuldo: discord.ui.TextInput = discord.ui.TextInput(
-                    label='Küldő',
-                    placeholder='Írd ide a neved (nem kötelező)',
-                    required=False
-                )
+            def __init__(self, bot_client: commands.Bot, is_forbot = None):
+                super().__init__(title='Javaslat beküldése')
+                self.bot_client = bot_client
+                self.is_forbot = is_forbot
 
-                def __init__(self, bot_client: commands.Bot):
-                    super().__init__(title='Javaslat beküldése')
-                    self.bot_client = bot_client
+            async def on_submit(self, interaction: discord.Interaction):
+                javaslat_szoveg = self.javaslat.value
+                kudo_szoveg = self.kuldo.value or "Egy névtelen családtag"
 
-                async def on_submit(self, interaction: discord.Interaction):
-                    javaslat_szoveg = self.javaslat.value
-                    kudo_szoveg = self.kuldo.value or "Egy névtelen családtag"
-
-                    channel_id = int(get_token("DISCORD_TEST_SUGGESTION_CHANNEL_ID"))
+                if self.is_forbot is None:
+                    channel_id = int(get_token("DISCORD_SUGGESTION_CHANNEL_ID"))
                     channel = self.bot_client.get_channel(channel_id)
 
                     if channel:
@@ -250,7 +237,43 @@ class CommandService:
                     else:
                         await interaction.response.send_message("Nem találtam a javaslatok csatornáját.",
                                                                 ephemeral=True, delete_after=5)
+                else:
+                    user = await self.bot_client.fetch_user(int(get_token("DEV_USER_ID")))
+                    if user:
+                        embed = create_embed(
+                            title="Új javaslat érkezett!",
+                            description=f"**Javaslat:** {javaslat_szoveg}\n\n**Küldő:** {kudo_szoveg}",
+                            color=0x00FF00,
+                            timestamp=datetime.now()
+                        )
+                        try:
+                            await user.send(embed=embed)
+                            await interaction.response.send_message("Javaslat sikeresen elküldve!", ephemeral=True,
+                                                                    delete_after=5)
+                        except discord.Forbidden:
+                            await interaction.response.send_message(
+                                "Nem tudtam DM-et küldeni a fejlesztőnek. Lehet, hogy le van tiltva.", ephemeral=True,
+                                delete_after=5)
+                        except Exception as e:
+                            await interaction.response.send_message(f"Hiba történt a DM küldésekor: {e}", ephemeral=True,
+                                                                    delete_after=5)
 
+        if theme == "bot":
+            user_id = int(get_token("DEV_USER_ID"))
+            user = await self.bot_client.fetch_user(user_id)
+            if user:
+                try:
+                    modal = JavaslatModal(self._commands_bot)
+                    await modal.start(interaction=self.interaction)
+                except discord.Forbidden:
+                    await self.interaction.response.send_message(
+                        "Nem tudtam DM-et küldeni a fejlesztőnek. Lehet, hogy le van tiltva.", ephemeral=True)
+                except Exception as e:
+                    await self.interaction.response.send_message(f"Hiba történt a DM küldésekor: {e}", ephemeral=True)
+            else:
+                await self.interaction.response.send_message("Nem találtam a fejlesztőt.", ephemeral=True)
+
+        elif theme == "szerver":
             modal = JavaslatModal(self._commands_bot)
             await self.interaction.response.send_modal(modal)
 
@@ -330,7 +353,7 @@ async def newrole(self, *, name: str, prompt: str, user_id: str, summary: str | 
 
 async def delete_role(self, *, name: str, user_id: str) -> (str, bool):
     gpt: dict = self.gpt.get_gpt(name)
-    moderator_id: str = file_handler.get_token("MODERATOR_TEST_ROLE_ID")
+    moderator_id: str = file_handler.get_token("MODERATOR_ROLE_ID")
 
     if gpt == {}:
         return f"A `{name}` szerep nem található!", False

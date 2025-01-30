@@ -24,7 +24,7 @@ class CommandHandler:
 
         @app_commands.command(name="gogu", description="Étesítést küld ha Gogu streamel")
         async def gogu(interaction: discord.Interaction) -> None:
-            cha_id: int = int(get_token("DISCORD_TEST_STREAM_CHANNEL_ID"))
+            cha_id: int = int(get_token("DISCORD_STREAM_CHANNEL_ID"))
             message: discord.Message = interaction.message
             channel_id: discord.TextChannel = self._bot.get_channel(cha_id)
 
@@ -45,7 +45,7 @@ class CommandHandler:
             app_commands.Choice(name="Spanyol", value="es"),
         ])
         async def ima(interaction: discord.Interaction, *, nyelv: str | None = None) -> None:
-            chat_id: int = int(get_token("DISCORD_TEST_IMA_CHANNEL_ID"))
+            chat_id: int = int(get_token("DISCORD_IMA_CHANNEL_ID"))
             message: discord.Message = interaction.message
             channel_id: discord.TextChannel = self._bot.get_channel(chat_id)
 
@@ -247,7 +247,7 @@ class CommandHandler:
                                                                               author=author)
                     embed.set_author(name=author if author else "Anonim")
 
-                    channel_id = int(get_token("NOTIFICATION_TEST_CHANNEL_ID"))
+                    channel_id = int(get_token("NOTIFICATION_CHANNEL_ID"))
                     channel = interaction.client.get_channel(channel_id)
                     await channel.send(embed=embed)
                     await interaction.response.send_message("Bejelentés elküldve!", ephemeral=True, delete_after=5)
