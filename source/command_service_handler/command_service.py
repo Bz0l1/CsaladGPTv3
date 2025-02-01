@@ -5,11 +5,19 @@ import discord
 from discord.ext import commands
 from datetime import datetime
 
-from source.file_service_handler.file_reader import read_json
-from source.submode_services_handler.youtube_api import is_channel_live
-from source.submode_services_handler.quoting import read_bible
-from source.file_service_handler.file_writer import save_ima_date_time, save_percek
-from source.file_service_handler.file_reader import get_token, read_txt
+from typing_extensions import Optional
+
+from source.submode_services_handler.youtube_api import LiveStreamStatus, check_channel_status
+from source.submode_services_handler.quoting import BibleVerse
+from source.submode_services_handler.ai_chat import OpenAIAPI
+from source.file_service_handler.file_writer import LocalFileWriter
+from source.file_service_handler.file_reader import LocalFileReader
+
+######### KONSTANSOK #########
+FILE_READER: LocalFileReader = LocalFileReader()
+FILE_WRITER: LocalFileWriter = LocalFileWriter()
+
+##############################
 
 
 def create_embed(*, title: str = None, description: str = None, image_url: str = None, thumbnail_url: str = None,
@@ -26,11 +34,11 @@ def create_embed(*, title: str = None, description: str = None, image_url: str =
 
 
 class CommandService:
-    def __init__(self, *, interaction: discord.Interaction | None = None, bot: commands.Bot | None = None) -> None:
-        self.interaction: discord.Interaction | None = interaction
-        self.bot_client: discord.Client | None = (interaction.client if interaction is not None else None)
-        self._commands_bot = bot
-        self.bot_for_automatization: commands.Bot | None = bot
+    def __init__(self, *, interaction: Optional[discord.Interaction] = None, bot: Optional[commands.Bot] = None) -> None:
+        self.interaction: Optional[discord.Interaction] = interaction
+        self.bot_client: Optional[discord.Client] = (interaction.client if interaction is not None else None)
+        self._commands_bot: Optional[commands.Bot] = bot
+        self.bot_for_automatization: Optional[commands.Bot] = bot
 
     async def ping(self) -> None:
         start_time: float = time.time()
@@ -66,7 +74,7 @@ class CommandService:
         await message.edit(embed=result_embed)
 
     async def help(self, *, command: str | None = None) -> discord.Embed | None:
-        data: dict = read_json("help")
+        data: dict = FILE_READER.read_json(file_name="help")
 
         if command is None:
             print(data)
@@ -110,7 +118,8 @@ class CommandService:
     async def gogu(self) -> None:
         is_command: bool = self.interaction is not None and self.bot_for_automatization is None
         print(is_command)
-        url: str | None = is_channel_live(is_command=is_command)
+        url_object: LiveStreamStatus = check_channel_status(is_command=is_command)
+        url: str | None = url_object.url
         is_live: bool = url is not None
 
         if not is_live:
@@ -137,22 +146,23 @@ class CommandService:
         elif self.bot_for_automatization is not None:
             if is_live:
                 channel: discord.TextChannel = self.bot_for_automatization.get_channel(
-                    int(get_token("DISCORD_STREAM_CHANNEL_ID")))
+                    int(FILE_READER.get_token(token_name="DISCORD_TEST_STREAM_CHANNEL_ID")))
                 await channel.send(
                     embed=create_embed(title=title, description=description, color=color, timestamp=timestamp,
                                        footer_text=footer_text, thumbnail_url=thumbnail_url, image_url=alert_gif))
 
     async def ima(self, nyelv: str | None) -> None:
         is_command: bool = self.interaction is not None and self.bot_for_automatization is None
+        biblia: BibleVerse = BibleVerse(lang=nyelv)
         if not is_command:
-            date_from_file: str | datetime = read_txt("ima_date_time")
+            date_from_file: str | datetime = FILE_READER.read_txt(file_name="ima_date_time")
             date_str = date_from_file.strip()
             date_from_file = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f")
 
             if (datetime.now() - date_from_file).days < 1:
                 return
 
-        verse, lang = read_bible(lang=nyelv)
+        verse, lang = biblia.read_bible()
 
         title: str = "🙏 Ima 🙏" if is_command else "🙏 Napi Ima 🙏"
         description: str = verse
@@ -163,9 +173,9 @@ class CommandService:
         print(str(timestamp))
 
         if not is_command:
-            save_ima_date_time(time=timestamp.isoformat())
+            FILE_WRITER.save_ima_date_time(time=timestamp.isoformat())
             channel: discord.TextChannel = self.bot_for_automatization.get_channel(
-                int(get_token("DISCORD_IMA_CHANNEL_ID")))
+                int(FILE_READER.get_token(token_name="DISCORD_TEST_IMA_CHANNEL_ID")))
             await channel.send(
                 embed=create_embed(title=title, description=description, color=color, timestamp=timestamp,
                                    footer_text=footer_text, thumbnail_url=thumbnail_url))
@@ -175,7 +185,7 @@ class CommandService:
                                    footer_text=footer_text, thumbnail_url=thumbnail_url))
 
     async def percek(self) -> None:
-        data: str = read_txt("percek")
+        data: str = FILE_READER.read_txt(file_name="percek")
         embed: discord.Embed = create_embed(title=f"{data} perc")
 
         to_day: int = int(data) // (24 * 60)
@@ -189,7 +199,7 @@ class CommandService:
         await self.interaction.response.send_message(embed=embed)
 
     async def setperc(self, amount: str) -> None:
-        save_percek(amount)
+        FILE_WRITER.save_percek(time=amount)
         await self.interaction.response.send_message(
             embed=create_embed(title=f"A perc számláló módosítva: {amount} percre"))
 
@@ -217,7 +227,7 @@ class CommandService:
                 kudo_szoveg = self.kuldo.value or "Egy névtelen családtag"
 
                 if self.is_forbot is None:
-                    channel_id = int(get_token("DISCORD_SUGGESTION_CHANNEL_ID"))
+                    channel_id = int(FILE_READER.get_token(token_name="DISCORD_TEST_SUGGESTION_CHANNEL_ID"))
                     channel = self.bot_client.get_channel(channel_id)
 
                     if channel:
@@ -238,7 +248,7 @@ class CommandService:
                         await interaction.response.send_message("Nem találtam a javaslatok csatornáját.",
                                                                 ephemeral=True, delete_after=5)
                 else:
-                    user = await self.bot_client.fetch_user(int(get_token("DEV_USER_ID")))
+                    user = await self.bot_client.fetch_user(int(FILE_READER.get_token(token_name="DEV_USER_ID")))
                     if user:
                         embed = create_embed(
                             title="Új javaslat érkezett!",
@@ -259,7 +269,7 @@ class CommandService:
                                                                     delete_after=5)
 
         if theme == "bot":
-            user_id = int(get_token("DEV_USER_ID"))
+            user_id = int(FILE_READER.get_token(token_name="DEV_USER_ID"))
             user = await self.bot_client.fetch_user(user_id)
             if user:
                 try:
@@ -276,6 +286,11 @@ class CommandService:
         elif theme == "szerver":
             modal = JavaslatModal(self._commands_bot)
             await self.interaction.response.send_modal(modal)
+
+    async def say(self, *, role: Optional[str], prompt: str, author: discord.Interaction.user) -> None:
+        opeanai: OpenAIAPI = OpenAIAPI()
+        response: str = await opeanai.text_response(prompt=prompt, role=role)
+        await self.interaction.followup.send(content=response)
 
 
 """

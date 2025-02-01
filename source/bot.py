@@ -1,59 +1,96 @@
-import time
-import asyncio  # Add this import
 import discord
 
-import random
-from discord import Message
 from discord.ext import commands
-from googleapiclient.channel import notification_from_headers
 
-from file_service_handler.file_reader import get_token, read_txt
+from automation_service_handler.automation import AutomationService
+from file_service_handler.file_reader import LocalFileReader
 from command_service_handler.command_handler import CommandHandler
-from command_service_handler.command_service import CommandService
 
+######### KONSTANSOK #########
+FILE_READER: LocalFileReader = LocalFileReader()
+
+
+##############################
 
 class Bot(commands.Bot):
-    def __init__(self, intents: discord.Intents) -> None:
-        super().__init__(command_prefix='!', intents=intents, help_command=None)
-        self.guild: discord.Object = discord.Object(id=int(get_token("DISCORD_GUILD_ID")))
-        self.command_handler: CommandHandler | None = None
+    def __init__(self, *, intents: discord.Intents) -> None:
+        super().__init__(
+            command_prefix='!',
+            intents=intents,
+            help_command=None,
+        )
+        self._configure_environment()
+        self.command_handler: CommandHandler = CommandHandler(bot=self)
+        self.automation: AutomationService = AutomationService(bot=self)
 
-    async def setup_hook(self) -> None:
-        self.command_handler = CommandHandler(bot=self)
+    def _configure_environment(self) -> None:
+        """
+        A környezeti változók beállításáért felelős metódus.
+
+        :return:
+        """
+        self.guild: discord.Object = discord.Object(id=int(FILE_READER.get_token(token_name="DISCORD_TEST_GUILD_ID")))
+        self.main_channel_id: int = int(FILE_READER.get_token(token_name="DISCORD_TEST_MAIN_CHANNEL_ID"))
+        self.bot_channel_id: int = int(FILE_READER.get_token(token_name="DISCORD_TEST_BOT_CHANNEL_ID"))
+
+    async def _sync_commands(self) -> None:
+        """
+        A parancsok szinkronizálásáért felelős metódus.
+
+        :return:
+        """
         self.tree.copy_global_to(guild=self.guild)
         await self.tree.sync(guild=self.guild)
 
+    async def _start_automations(self) -> None:
+        """
+        Az automatizációk indításáért felelős metódus.
+
+        :return:
+        """
+        self.automation.youtube_automatization.start()
+        self.automation.ima_automatization.start()
+
+    async def setup_hook(self) -> None:
+        await self._sync_commands()
+        await self._start_automations()
+
     async def on_ready(self) -> None:
         print(f"{self.user} csatlakozott!")
-        channel: discord.TextChannel = self.get_channel(int(get_token("DISCORD_MAIN_CHANNEL_ID")))
         await self.change_presence(activity=discord.Game(name="/help | z0l1"))
+        channel = self.get_channel(self.main_channel_id)
         await channel.send("Szia Család!")
         # await self.update_notification()
 
-        self.loop.create_task(self.youtube_automatization())
-        self.loop.create_task(self.ima_automatization())
-
     async def on_interaction(self, interaction: discord.Interaction) -> None:
+        """
+        Az interakciókra való reagálásért felelős metódus.
+
+        :param interaction: discord.Interaction objektum - Az interakció, amire a bot reagál.
+        :return:
+        :note: Az interakciókra való reagálás még nincs implementálva még.
+        :todo: tervezés alatt
+        """
         pass
 
     async def on_message(self, message: discord.Message, /) -> None:
+        """
+        Az üzenetekre való reagálásért felelős metódus.
+
+        :param message: discord.Message objektum - Az üzenet, amire a bot reagál.
+        :return:
+        :todo: az XP rendszer implementálása valahol itt...
+        """
         await self.process_commands(message)
 
-    async def youtube_automatization(self) -> None:
-        command_service: CommandService = CommandService(bot=self)
-        while True:
-            await command_service.gogu()
-            await asyncio.sleep(350)
-
-    async def ima_automatization(self) -> None:
-        commands_service: CommandService = CommandService(bot=self)
-        while True:
-            await commands_service.ima(nyelv=None)
-            await asyncio.sleep(5000)
-
     async def update_notification(self) -> None:
-        notification: str = read_txt("update")
-        channel: discord.TextChannel = self.get_channel(int(get_token("DISCORD_BOT_CHANNEL_ID")))
+        """
+        Update értesítéséért felelős metódus.
+
+        :return:
+        """
+        notification: str = FILE_READER.read_txt(file_name="update")
+        channel: discord.TextChannel = self.get_channel(self.bot_channel_id)
         embed: discord.Embed = discord.Embed(title="**CsaládGPT UPDATE!!**", description=notification,
                                              color=discord.Color.green())
         await channel.send(embed=embed)
@@ -66,5 +103,5 @@ if __name__ == '__main__':
     intents.reactions = True
     intents.members = True
     intents.message_content = True
-    bot = Bot(intents)
-    bot.run(get_token("DISCORD_TOKEN"))
+    bot = Bot(intents=intents)
+    bot.run(FILE_READER.get_token(token_name="DISCORD_TEST_TOKEN"))

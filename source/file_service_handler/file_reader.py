@@ -1,40 +1,50 @@
 from pathlib import Path
+from typing import Optional
 
 from dotenv import load_dotenv
 import os
 import json
 
+### KONSTANSOK ###
 load_dotenv()
-BASE_DIR = Path(__file__).resolve().parent.parent
-local_db_path = os.path.join(BASE_DIR, "database_service_handler", "database")
-
-def get_token(token_name: str) -> str:
-    token: str = os.getenv(token_name)
-
-    if token is None:
-        raise ValueError(f"HIBA (file_reader.get_token): {token_name} nem található!")
-
-    return token
+BASE_DIR: Path = Path(__file__).resolve().parent.parent
+LOCAL_DB_PATH: Path = BASE_DIR / "database_service_handler" / "database"
 
 
-def read_json(file_name: str) -> dict:
-    try:
-        with open(f"{local_db_path}/{file_name}.json", "r", encoding="utf-8") as file:
-            print(f"{file_name}.json sikeresen beolvasva")
-            data: dict = json.load(file)
-    except FileNotFoundError:
-        data = {}
+##################
 
-    return data
+class LocalFileReader:
+    def __init__(self) -> None:
+        self.local_db_path: Path = LOCAL_DB_PATH
+        self._ensure_dir_exists()
 
-print(type(read_json("help")))
+    def _ensure_dir_exists(self) -> None:
+        self.local_db_path.mkdir(parents=True, exist_ok=True)
 
-def read_txt(file_name: str) -> str:
-    try:
-        with open(f"{local_db_path}/{file_name}.txt", "r", encoding="utf-8") as file:
-            print(f"{file_name}.txt sikeresen beolvasva")
-            data: str = file.read()
-    except FileNotFoundError:
-        data = ""
+    @staticmethod
+    def get_token(*, token_name: str) -> str:
+        token: Optional[str] = os.getenv(token_name)
 
-    return data
+        if not token:
+            raise ValueError(f"HIBA (file_reader.py): {token_name}")
+        return token
+
+    def read_json(self, *, file_name: str) -> dict:
+        try:
+            file_path: Path = self.local_db_path / f"{file_name}.json"
+
+            with open(file_path, 'r', encoding="utf-8") as file:
+                data: dict[str, str] = json.load(file)
+                return data
+        except FileNotFoundError:
+            return {}
+
+    def read_txt(self, *, file_name: str) -> str:
+        try:
+            file_path: Path = self.local_db_path / f"{file_name}.txt"
+
+            with open(file_path, 'r', encoding="utf-8") as file:
+                data: str = file.read()
+                return data
+        except FileNotFoundError:
+            return ""
