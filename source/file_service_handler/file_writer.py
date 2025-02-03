@@ -1,5 +1,6 @@
 from pathlib import Path
-from typing import Union
+from typing import Any
+import json
 
 ### KONSTANSOK ###
 BASE_DIR: Path = Path(__file__).resolve().parent.parent
@@ -8,6 +9,7 @@ FILENAMES: dict[str, str] = {
     "youtube_live_url": "youtube_live_url.txt",
     "ima_date_time": "ima_date_time.txt",
     "perc": "perc.txt",
+    "roles": "roles.json"
 }
 
 
@@ -79,3 +81,18 @@ class LocalFileWriter:
         :return:
         """
         self._save_to_file(filename=FILENAMES["perc"], content=time)
+
+    def save_json(self, *, filename: str, data: dict[Any, Any]) -> None:
+        """
+        JSON fájl mentése.
+
+        :param filename: str - A fájl neve
+        :param data: dict[Any, Any] - A fájl tartalma
+        :return: None
+        """
+        try:
+            file_path: Path = self.local_db_path / FILENAMES[filename]
+            with open(file_path, 'w', encoding='utf-8') as file:
+                json.dump(data, file, ensure_ascii=False, indent=4)
+        except Exception as err:
+            print(f"HIBA (file_writer.py): {err}")

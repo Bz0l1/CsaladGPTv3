@@ -17,6 +17,7 @@ class CommandHandler:
     def __init__(self, *, bot: commands.Bot) -> None:
         self._bot: commands.Bot = bot
         self.register_commands()
+        self._gpt_roles: dict = FILE_READER.read_json(file_name="roles")
 
     def register_commands(self) -> None:
         ##### RENDSZER PARANCSOK #####
@@ -176,28 +177,130 @@ class CommandHandler:
 
         ##### SAY PARANCSOK #####
         @app_commands.command(name="say", description="CsaládGPT az AI segítségével válaszol neked")
-        async def say(interaction: discord.Interaction, *, role: Optional[str] = None, message: str) -> None:
+        @app_commands.choices(model=[
+            app_commands.Choice(name="gpt4o", value="gpt-4o-mini"),
+            app_commands.Choice(name="gpt-o3", value="o3-mini"),
+            app_commands.Choice(name="gemini 1.5 Flash", value="gemini-1.5-flash"),
+        ])
+        async def say(interaction: discord.Interaction, *, model: str = "gpt-4o-mini",
+                      role: Optional[str] = None, message: str) -> None:
+            """
+            CsaládGPT az AI segítségével válaszol neked
+
+            :param interaction:
+            :param model:
+            :param role:
+            :param message:
+            :return:
+            """
             await interaction.response.defer()
             command_service: CommandService = CommandService(interaction=interaction)
-            await command_service.say(role=role, prompt=message, author=interaction.user)
+            await command_service.say(role=role, prompt=message, author=interaction.user, model=model)
+
+        @say.autocomplete("role")  # say parancs
+        async def role_autocomplete(interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+            roles_data = FILE_READER.read_json(file_name="roles")
+            roles = [
+                role.get("name", "ismeretlen szerep")
+                for role in roles_data.values()
+            ]
+            return [
+                app_commands.Choice(name=role, value=role)
+                for role in roles
+                if current.lower() in role.lower()
+            ]
 
         @app_commands.command(name="szerepek", description="Szerepek listázása")
-        async def roles(interaction: discord.Interaction) -> None:
-            pass
+        async def roles(interaction: discord.Interaction, *, szerep: Optional[str] = None) -> None:
+            """
+            Szerepek listázása
+
+            :param szerep: str - A szerep neve (opcionális)
+            :param interaction: discord.Interaction - Az interakció objektum
+            :return:
+            """
+            command_service: CommandService = CommandService(interaction=interaction)
+            await command_service.roles(role=szerep)
+
+        @roles.autocomplete("szerep")
+        async def role_autocomplete(interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+            roles_data = FILE_READER.read_json(file_name="roles")
+            roles = [
+                role.get("name", "ismeretlen szerep")
+                for role in roles_data.values()
+            ]
+            return [
+                app_commands.Choice(name=role, value=role)
+                for role in roles
+                if current.lower() in role.lower()
+            ]
 
         @app_commands.command(name="új_szerep", description="Szerep hozzáadása")
         async def new_role(interaction: discord.Interaction, *, role: str) -> None:
-            pass
+            roles: dict = FILE_READER.read_json(file_name="roles")
+
+            if role in roles:
+                await interaction.response.send_message(content="Ez a szerep már létezik.", ephemeral=True,
+                                                        delete_after=10)
+                return
+
+            command_service: CommandService = CommandService(interaction=interaction)
+            await command_service.new_role(role=role, author=interaction.user)
+            self._gpt_roles = FILE_READER.read_json(file_name="roles")
 
         @app_commands.command(name="szerep_törlése", description="Szerep törlése")
         async def delete_role(interaction: discord.Interaction, *, role: str) -> None:
-            pass
+            roles: dict = FILE_READER.read_json(file_name="roles")
+            author_id: int = interaction.user.id
+
+            if role not in roles:
+                await interaction.response.send_message(content="Ez a szerep nem létezik.", ephemeral=True,
+                                                        delete_after=10)
+                return
+
+            if roles[role]["author_id"] != str(author_id):
+                await interaction.response.send_message(content="Nincs jogod törölni ezt a szerepet.", ephemeral=True,
+                                                        delete_after=10)
+                return
+
+            command_service: CommandService = CommandService(interaction=interaction)
+            await command_service.delete_role(role=role)
+
+        @delete_role.autocomplete("role")
+        async def role_autocomplete(interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+            roles_data = FILE_READER.read_json(file_name="roles")
+            user_id = str(interaction.user.id)
+            roles = [
+                role.get("name", "ismeretlen szerep")
+                for role in roles_data.values()
+                if role.get("author_id") == user_id
+            ]
+
+            return [
+                app_commands.Choice(name=role, value=role)
+                for role in roles
+                if current.lower() in role.lower()
+            ]
 
         @app_commands.command(name="szerep_módosítása", description="Szerep módosítása")
         async def modify_role(interaction: discord.Interaction, *, role: str) -> None:
             pass
 
+        ##### IMAGE GENERATOR #####
+        @app_commands.command(name="meme", description="Mém generátor")
+        async def meme(interaction: discord.Interaction, *, text: str) -> None:
+            pass
+
+        @app_commands.command(name="kép_generálás", description="Kép generátor")
+        @app_commands.choices(model=[
+            app_commands.Choice(name="imagen3 (Gemini)", value="imagen-3.0-generate-002"),
+            app_commands.Choice(name="DALL-E (OpenAI)", value="dall-e-3"),
+        ])
+        async def generate_image(interaction: discord.Interaction, *, prompt: str,
+                                 model: Optional[str] = "imagen-3.0-generate-002") -> None:
+            pass
+
         ############################
-        discord_commands: list = [ping, help, gogu, ima, percek, setperc, javaslat, say]
+        discord_commands: list = [ping, help, gogu, ima, percek, setperc, javaslat, say, roles, new_role, delete_role]
         for command in discord_commands:
             self._bot.tree.add_command(command)

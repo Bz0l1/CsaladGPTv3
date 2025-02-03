@@ -112,6 +112,7 @@ class CacheHandler:
         """
 
         data: str = FILE_READER.read_txt(file_name=FILE)
+        print(data)
 
         if not data:
             return None, None
@@ -130,7 +131,6 @@ class CacheHandler:
         :param cached_time:  Optional[float] - A cache-elt időbélyeg.
         :return:
         """
-
         return cached_time and (time.time() - cached_time) < TIME
 
     @staticmethod
