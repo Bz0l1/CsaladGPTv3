@@ -3,3 +3,7 @@ discord.py~=2.4.0
 python-dotenv~=1.0.1
 numpy~=1.26.4
 google-api-python-client~=2.142.0
+typing_extensions~=4.12.2
+tenacity~=9.0.0
+openai~=1.51.0
+protobuf~=5.29.3

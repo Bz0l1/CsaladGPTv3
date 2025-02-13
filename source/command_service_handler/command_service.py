@@ -1,19 +1,45 @@
 import random
 import time
+import asyncio
+import uuid
+from pathlib import Path
 
 import discord
 from discord.ext import commands
 from datetime import datetime
 
-from source.file_service_handler.file_reader import read_json
-from source.submode_services_handler.youtube_api import is_channel_live
-from source.submode_services_handler.quoting import read_bible
-from source.file_service_handler.file_writer import save_ima_date_time, save_percek
-from source.file_service_handler.file_reader import get_token, read_txt
+from typing_extensions import Optional
+
+from source.file_service_handler.file_reader import LocalFileReader
+from source.file_service_handler.file_writer import LocalFileWriter
+from source.submode_services_handler.image_gen import ImagenAPIs
+from source.submode_services_handler.ai_chat import AIChatAPIs
+from source.submode_services_handler.youtube_api import LiveStreamStatus, check_channel_status
+from source.submode_services_handler.quoting import BibleVerse
+
+### KONSTANSOK ###
+FILE_READER: LocalFileReader = LocalFileReader()
+FILE_WRITER: LocalFileWriter = LocalFileWriter()
 
 
-def create_embed(*, title: str = None, description: str = None, image_url: str = None, thumbnail_url: str = None,
-                 color: int = 0x000000, timestamp: datetime = None, footer_text: str = None) -> discord.Embed:
+#################
+
+def create_embed(*, title: Optional[str] = None, description: Optional[str] = None, image_url: Optional[str] = None,
+                 thumbnail_url: Optional[str] = None,
+                 color: Optional[int] = 0x000000, timestamp: Optional[datetime] = None,
+                 footer_text: Optional[str] = None) -> discord.Embed:
+    """
+    Discord embed készítése.
+
+    :param title: str - cím
+    :param description: str - leírás
+    :param image_url: str - kép URL
+    :param thumbnail_url: str - thumbnail URL
+    :param color: int - szín
+    :param timestamp: datetime - időbélyeg
+    :param footer_text: str - footer szöveg
+    :return: discord.Embed - a generált embed
+    """
     embed: discord.Embed = discord.Embed(color=color)
 
     if title: embed.title = title
@@ -26,11 +52,18 @@ def create_embed(*, title: str = None, description: str = None, image_url: str =
 
 
 class CommandService:
-    def __init__(self, *, interaction: discord.Interaction | None = None, bot: commands.Bot | None = None) -> None:
-        self.interaction: discord.Interaction | None = interaction
-        self.bot_client: discord.Client | None = (interaction.client if interaction is not None else None)
-        self._commands_bot = bot
-        self.bot_for_automatization: commands.Bot | None = bot
+    def __init__(self, *, interaction: Optional[discord.Interaction] = None,
+                 bot: Optional[commands.Bot] = None) -> None:
+        """
+        A parancskezelő kódja
+
+        :param interaction: discord.Interaction - az interakció (ha a user parancsot ad)
+        :param bot: commands.Bot - a bot (ha a bot maga futtatja a parancsot)
+        """
+        self.interaction: Optional[discord.Interaction] = interaction  # amikor parancsot kap a bot
+        self.bot_client: Optional[discord.Client] = (interaction.client if interaction is not None else None)
+        self._commands_bot: Optional[commands.Bot] = bot  # amikor a bot valamelyik parancsot maga futtatja
+        self.bot_for_automatization: Optional[commands.Bot] = bot  # amikor a bot automatikusan fut
 
     async def ping(self) -> None:
         start_time: float = time.time()
@@ -66,10 +99,9 @@ class CommandService:
         await message.edit(embed=result_embed)
 
     async def help(self, *, command: str | None = None) -> discord.Embed | None:
-        data: dict = read_json("help")
+        data: dict = FILE_READER.read_json(file_name="help")
 
         if command is None:
-            print(data)
             commands_list: list[str] = []
             common_commands: list = data.get("common", {}).get("commands", [])
 
@@ -109,9 +141,13 @@ class CommandService:
 
     async def gogu(self) -> None:
         is_command: bool = self.interaction is not None and self.bot_for_automatization is None
-        print(is_command)
-        url: str | None = is_channel_live(is_command=is_command)
+        url_object: LiveStreamStatus = check_channel_status(is_command=is_command)
+        url: str | None = url_object.url
         is_live: bool = url is not None
+
+        # Automatizálás esetén, ha a válasz a cache-ből származik, ne küldj értesítést.
+        if self.bot_for_automatization is not None and url_object.cached:
+            return
 
         if not is_live:
             title: str = "**NINCS STREAM**"
@@ -120,7 +156,6 @@ class CommandService:
             timestamp: datetime = datetime.now()
             footer_text: str = "STREAM"
             thumbnail_url: str = "https://cdn.discordapp.com/emojis/1151964870787481722.webp?size=96"
-            alert_gif = None
         else:
             title: str = "**STREAM VAN**"
             description: str = f"Megjött Fater\nGyere, csatlakozz:\n{url}"
@@ -128,31 +163,62 @@ class CommandService:
             timestamp: datetime = datetime.now()
             footer_text: str = "STREAM"
             thumbnail_url: str = "https://cdn.discordapp.com/emojis/1151964914274013274.webp?size=160&quality=lossless"
-            alert_gif = "https://tenor.com/view/alert-siren-warning-light-gif-15160785"
 
         if self.interaction is not None:
-            await self.interaction.response.send_message(
-                embed=create_embed(title=title, description=description, color=color, timestamp=timestamp,
-                                   footer_text=footer_text, thumbnail_url=thumbnail_url, image_url=alert_gif))
+            if is_live:
+                await self.interaction.response.send_message(
+                    content="@everyone",
+                    embed=create_embed(
+                        title=title,
+                        description=description,
+                        color=color,
+                        timestamp=timestamp,
+                        footer_text=footer_text,
+                        thumbnail_url=thumbnail_url
+                    )
+                )
+            else:
+                await self.interaction.response.send_message(
+                    embed=create_embed(
+                        title=title,
+                        description=description,
+                        color=color,
+                        timestamp=timestamp,
+                        footer_text=footer_text,
+                        thumbnail_url=thumbnail_url
+                    )
+                )
         elif self.bot_for_automatization is not None:
             if is_live:
                 channel: discord.TextChannel = self.bot_for_automatization.get_channel(
-                    int(get_token("DISCORD_STREAM_CHANNEL_ID")))
+                    int(FILE_READER.get_token(token_name="DISCORD_STREAM_CHANNEL_ID"))
+                )
+                await channel.send(content="@everyone")
                 await channel.send(
-                    embed=create_embed(title=title, description=description, color=color, timestamp=timestamp,
-                                       footer_text=footer_text, thumbnail_url=thumbnail_url, image_url=alert_gif))
+                    embed=create_embed(
+                        title=title,
+                        description=description,
+                        color=color,
+                        timestamp=timestamp,
+                        footer_text=footer_text,
+                        thumbnail_url=thumbnail_url
+                    )
+                )
+                await channel.send(content="https://tenor.com/view/alert-siren-warning-light-gif-15160785")
 
     async def ima(self, nyelv: str | None) -> None:
         is_command: bool = self.interaction is not None and self.bot_for_automatization is None
+        biblia: BibleVerse = BibleVerse(lang=nyelv)
+
         if not is_command:
-            date_from_file: str | datetime = read_txt("ima_date_time")
+            date_from_file: str | datetime = FILE_READER.read_txt(file_name="ima_date_time")
             date_str = date_from_file.strip()
             date_from_file = datetime.strptime(date_str, "%Y-%m-%dT%H:%M:%S.%f")
 
             if (datetime.now() - date_from_file).days < 1:
                 return
 
-        verse, lang = read_bible(lang=nyelv)
+        verse, lang = biblia.read_bible()
 
         title: str = "🙏 Ima 🙏" if is_command else "🙏 Napi Ima 🙏"
         description: str = verse
@@ -160,12 +226,11 @@ class CommandService:
         timestamp: datetime = datetime.now()
         footer_text: str = "Ámen 🙏" if lang == "hu" else "Amen 🙏" if lang in ("en", "es") else "アーメン 🙏"
         thumbnail_url: str = "https://cdn.discordapp.com/attachments/1205275317682442320/1239558620471885825/aacbe7e2c0844e43a3009cef9a89d899.jpg?ex=66435c6d&is=66420aed&hm=25d8ae669bd928cb45ed6268883217606c2c6e6ecce68815fe06d7b8a1b4bf2f&"
-        print(str(timestamp))
 
         if not is_command:
-            save_ima_date_time(time=timestamp.isoformat())
+            FILE_WRITER.save_ima_date_time(time=timestamp.isoformat())
             channel: discord.TextChannel = self.bot_for_automatization.get_channel(
-                int(get_token("DISCORD_IMA_CHANNEL_ID")))
+                int(FILE_READER.get_token(token_name="DISCORD_IMA_CHANNEL_ID")))
             await channel.send(
                 embed=create_embed(title=title, description=description, color=color, timestamp=timestamp,
                                    footer_text=footer_text, thumbnail_url=thumbnail_url))
@@ -175,7 +240,7 @@ class CommandService:
                                    footer_text=footer_text, thumbnail_url=thumbnail_url))
 
     async def percek(self) -> None:
-        data: str = read_txt("percek")
+        data: str = FILE_READER.read_txt(file_name="percek")
         embed: discord.Embed = create_embed(title=f"{data} perc")
 
         to_day: int = int(data) // (24 * 60)
@@ -189,7 +254,7 @@ class CommandService:
         await self.interaction.response.send_message(embed=embed)
 
     async def setperc(self, amount: str) -> None:
-        save_percek(amount)
+        FILE_WRITER.save_percek(time=amount)
         await self.interaction.response.send_message(
             embed=create_embed(title=f"A perc számláló módosítva: {amount} percre"))
 
@@ -207,23 +272,23 @@ class CommandService:
                 required=False
             )
 
-            def __init__(self, bot_client: commands.Bot, is_forbot = None):
+            def __init__(self, bot_client: commands.Bot, is_forbot=None):
                 super().__init__(title='Javaslat beküldése')
                 self.bot_client = bot_client
                 self.is_forbot = is_forbot
 
             async def on_submit(self, interaction: discord.Interaction):
                 javaslat_szoveg = self.javaslat.value
-                kudo_szoveg = self.kuldo.value or "Egy névtelen családtag"
+                kuldo_szoveg = self.kuldo.value or "Egy névtelen családtag"
 
                 if self.is_forbot is None:
-                    channel_id = int(get_token("DISCORD_SUGGESTION_CHANNEL_ID"))
+                    channel_id = int(FILE_READER.get_token(token_name="DISCORD_SUGGESTION_CHANNEL_ID"))
                     channel = self.bot_client.get_channel(channel_id)
 
                     if channel:
                         embed = create_embed(
                             title="Új javaslat érkezett!",
-                            description=f"**Javaslat:** {javaslat_szoveg}\n\n**Küldő:** {kudo_szoveg}",
+                            description=f"**Javaslat:** {javaslat_szoveg}\n\n**Küldő:** {kuldo_szoveg}",
                             color=0x00FF00,
                             timestamp=datetime.now()
                         )
@@ -238,11 +303,11 @@ class CommandService:
                         await interaction.response.send_message("Nem találtam a javaslatok csatornáját.",
                                                                 ephemeral=True, delete_after=5)
                 else:
-                    user = await self.bot_client.fetch_user(int(get_token("DEV_USER_ID")))
+                    user = await self.bot_client.fetch_user(int(FILE_READER.get_token(token_name="DEV_USER_ID")))
                     if user:
                         embed = create_embed(
                             title="Új javaslat érkezett!",
-                            description=f"**Javaslat:** {javaslat_szoveg}\n\n**Küldő:** {kudo_szoveg}",
+                            description=f"**Javaslat:** {javaslat_szoveg}\n\n**Küldő:** {kuldo_szoveg}",
                             color=0x00FF00,
                             timestamp=datetime.now()
                         )
@@ -250,26 +315,25 @@ class CommandService:
                             await user.send(embed=embed)
                             await interaction.response.send_message("Javaslat sikeresen elküldve!", ephemeral=True,
                                                                     delete_after=5)
-                        except discord.Forbidden:
-                            await interaction.response.send_message(
-                                "Nem tudtam DM-et küldeni a fejlesztőnek. Lehet, hogy le van tiltva.", ephemeral=True,
-                                delete_after=5)
+                            FILE_WRITER.save_json(filename="javaslat",
+                                                  data={"javaslat": javaslat_szoveg, "kuldo": kuldo_szoveg})
+
+
                         except Exception as e:
-                            await interaction.response.send_message(f"Hiba történt a DM küldésekor: {e}", ephemeral=True,
+                            await interaction.response.send_message(f"Hiba történt a DM küldésekor: {e}",
+                                                                    ephemeral=True,
                                                                     delete_after=5)
 
         if theme == "bot":
-            user_id = int(get_token("DEV_USER_ID"))
+            user_id = int(FILE_READER.get_token(token_name="DEV_USER_ID"))
             user = await self.bot_client.fetch_user(user_id)
             if user:
                 try:
                     modal = JavaslatModal(self._commands_bot)
-                    await modal.start(interaction=self.interaction)
-                except discord.Forbidden:
-                    await self.interaction.response.send_message(
-                        "Nem tudtam DM-et küldeni a fejlesztőnek. Lehet, hogy le van tiltva.", ephemeral=True)
+                    await self.interaction.response.send_modal(modal)
                 except Exception as e:
-                    await self.interaction.response.send_message(f"Hiba történt a DM küldésekor: {e}", ephemeral=True)
+                    await self.interaction.response.send_message(
+                        f"Hiba történt a DM küldésekor: {e}", ephemeral=True)
             else:
                 await self.interaction.response.send_message("Nem találtam a fejlesztőt.", ephemeral=True)
 
@@ -277,102 +341,240 @@ class CommandService:
             modal = JavaslatModal(self._commands_bot)
             await self.interaction.response.send_modal(modal)
 
+    async def say(self, *, role: Optional[str], prompt: str, author: discord.Interaction.user, model: str) -> None:
+        aichat: AIChatAPIs = AIChatAPIs()
+        response: str = await aichat.text_response(prompt=prompt, role=role, model=model)
+        await self.interaction.followup.send(response)
 
-"""
-async def convert(self, from_currency: str, amount: int) -> str:
-    if from_currency == "perc":
-        forint_value = amount * 200
-        formatted_forint = f'{forint_value:,}'.replace(',', '.')
-        return f"{formatted_forint} gulden"
+    async def roles(self, *, role: Optional[str] = None) -> None:
+        data: dict = FILE_READER.read_json(file_name="roles")
 
-    else:
-        minute_value = amount / 200
-        hour_value = minute_value / 60
-        return f'{amount} gulden = {minute_value:.2f} perc = {hour_value:.2f} óra'
-"""
+        if role is None:
+            role_author_list: list = [(role, details["author_id"]) for role, details in data.items()]
 
-"""
-async def insult(self, *, user: discord.Member | None = None, role: discord.Role | None = None, author) -> str:
-    if user is None and role is None:
-        return (f"{self.interaction.user.mention} megsértette saját magát:\n"
-                f"> te egy {self.quoting.read_insult(False)}")
+            title: str = "Elérhető szerepek"
+            description: str = "\n".join(
+                [f"{role} - Készítő: {self.bot_client.get_user(int(author)).display_name}" for role, author in
+                 role_author_list])
 
-    if user is not None:
-        author: discord.Member = author
-        start_insult: list[str] = [
-            "hogy rohadnál meg te ",
-            "te kis ",
-            "te ",
-            "te nagy ",
-            "te büdös "
-        ]
+            color: int = random.randint(0, 0xFFFFFF)
+            timestamp: datetime = datetime.now()
+            footer_text: str = (
+                "Használd a ``/say`` parancsot a szerepek használatához.\n"
+                "Használd a ``/szerepek <szerep>`` parancsot a szerep promptjának lekéréséhez.\n"
+                "Használd a ``/új_szerep <szerep> <prompt>`` parancsot új szerep hozzáadásához.\n"
+                "Használd a ``/szerep_törlése <szerep>`` parancsot szerep törléséhez.\n"
+                "Használd a ``/szerep_módosítása <szerep>`` parancsot szerep módosításához."
+            )
 
-        return (f"{author.mention} megsértett téged {user.mention}:\n"
-                f"> {user.mention} {random.choice(start_insult)} {self.quoting.read_insult(False)}")
+            embed: discord.Embed = create_embed(title=title, description=description, color=color, timestamp=timestamp,
+                                                footer_text=footer_text)
+        else:
+            if role not in data:
+                title: str = "Hiba"
+                description: str = f"A '{role}' szerep nem található."
+                color: int = random.randint(0, 0xFFFFFF)
+                timestamp: datetime = datetime.now()
+                footer_text: str = "Ellenőrizd az elérhető szerepeket a `/szerepek` parancs segítségével."
+                embed: discord.Embed = create_embed(title=title, description=description, color=color,
+                                                    timestamp=timestamp, footer_text=footer_text)
+            else:
+                title: str = role
+                description: str = data[role]["prompt"]
+                color: int = random.randint(0, 0xFFFFFF)
+                timestamp: datetime = datetime.now()
+                footer_text: str = "Használd a `/say` parancsot a szerep használatához."
+                embed: discord.Embed = create_embed(title=title, description=description, color=color,
+                                                    timestamp=timestamp, footer_text=footer_text)
 
-    if role is not None:
-        start_insult: list[str] = [
-            "ti büdös ",
-            "ti kis ",
-            "ti ",
-            "ti nagy ",
-        ]
+        await self.interaction.response.send_message(embed=embed)
 
-        if role.is_default():
-            return (f"{author.mention} megsértett mindenkit:\n"
-                    f"> @everyone {random.choice(start_insult)}{self.quoting.read_insult(True)}")
+    async def new_role(self, *, role: str, author: discord.Interaction.user) -> None:
+        class NewRoleModal(discord.ui.Modal):
+            def __init__(self, *, bot_client: commands.Bot):
+                super().__init__(title='Új szerep hozzáadása')
+                self.bot_client = bot_client
 
-        return (f"{author.mention} megsértett titeket, {role.mention}-k:\n"
-                f"> {role.mention} {random.choice(start_insult)}{self.quoting.read_insult(True)}")
+                self.role_name_input = discord.ui.TextInput(
+                    label='Szerep neve:',
+                    default=role,
+                    max_length=100,
+                    style=discord.TextStyle.long,
+                    required=True
+                )
+                self.prompt_input = discord.ui.TextInput(
+                    label='Szerep:',
+                    placeholder='Írd ide a szerep leírását',
+                    style=discord.TextStyle.long,
+                    required=True,
+                    max_length=340
+                )
+                self.add_item(self.role_name_input)
+                self.add_item(self.prompt_input)
 
-async def jimmy(self) -> str:
-    return self.quoting.read_jimmy()
-"""
+            async def on_submit(self, interaction: discord.Interaction):
+                role_name = self.role_name_input.value
+                role_prompt = self.prompt_input.value
 
-"""
-async def say(self, *, role: str, prompt: str = "", model: str = "gpt3") -> str | bool:
-    if self.gpt.get_gpt(role) == {}:
-        return False
+                data: dict = FILE_READER.read_json(file_name="roles")
+                data[role_name] = {"name": role_name, "prompt": role_prompt, "author_id": str(interaction.user.id)}
+                FILE_WRITER.save_json(filename="roles", data=data)
 
-    if prompt == "":
-        return "Meow/ 🐱"
+                await interaction.response.send_message(f"A '{role_name}' szerep sikeresen hozzáadva!", ephemeral=True)
 
-    return await self.gpt.say(model=model, role=role, prompt=prompt)
+        modal = NewRoleModal(bot_client=self._commands_bot)
+        await self.interaction.response.send_modal(modal)
 
-async def list_roles(self) -> discord.Embed:
-    desc: str = "\n".join(
-        [f"**{role['gpt-role']} - {role['summary'] if role['summary'] != '' else 'Nincs leírás'}**"
-         for role in self.gpt.gpts.values()])
-    return create_embed(title="Elérhető szerepek:", description=desc, color=0x630099, timestamp=datetime.now(),
-                        footer_text="Használd a `/say <szerep> <prompt>` parancsot a szerepek használatához.")
+    async def delete_role(self, *, role: str) -> None:
+        data: dict = FILE_READER.read_json(file_name="roles")
 
-async def newrole(self, *, name: str, prompt: str, user_id: str, summary: str | None = None) -> (str, bool):
-    if self.gpt.new_roles(name=name, prompt=prompt, user_id=user_id, summary=summary):
-        return f"Sikeresen hozzáadtad a `{name}` szerepet!", True
-    return f"A `{name}` szerep már létezik!", False
+        if role in data:
+            del data[role]
+            FILE_WRITER.save_json(filename="roles", data=data)
+            await self.interaction.response.send_message(f"A '{role}' szerep sikeresen törölve!", ephemeral=True)
+        else:
+            await self.interaction.response.send_message(f"A '{role}' szerep nem található.", ephemeral=True)
 
-async def delete_role(self, *, name: str, user_id: str) -> (str, bool):
-    gpt: dict = self.gpt.get_gpt(name)
-    moderator_id: str = file_handler.get_token("MODERATOR_ROLE_ID")
+    async def modify_role(self, *, role: str) -> None:
+        data: dict = FILE_READER.read_json(file_name="roles")
 
-    if gpt == {}:
-        return f"A `{name}` szerep nem található!", False
+        class ModifyRoleModal(discord.ui.Modal):
+            def __init__(self, *, bot_client: commands.Bot, data: dict):
+                super().__init__(title="szerep módosítása")
+                self.bot_client = bot_client
+                self.data: dict = data
 
-    if (user_id or moderator_id) not in gpt["user_id"]:
-        return "🚫 Nincs jogosultságod a szerep törléséhez/ 🚫", False
+                self.role_name_input = discord.ui.TextInput(
+                    label='Szerep neve:',
+                    default=role,
+                    max_length=999,
+                    style=discord.TextStyle.long,
+                    required=True
+                )
 
-    if self.gpt.remove_roles(name=name):
-        return f"{name} sikeresen törölve", True
+                self.prompt_input = discord.ui.TextInput(
+                    label='Szerep:',
+                    default=data[role]["prompt"],
+                    style=discord.TextStyle.long,
+                    required=True,
+                    max_length=999
+                )
 
-    return f"{name} törlése sikertelen", False
+                self.add_item(self.role_name_input)
+                self.add_item(self.prompt_input)
 
-async def bejelentes(self, *, title: str, description: str, author: str) -> discord.Embed | None:
-    embed = create_embed(title=title, description=description, color=0x00f510, timestamp=datetime.now(),
-                         footer_text=f"{author}")
+            async def on_submit(self, interaction: discord.Interaction):
+                new_role_name = self.role_name_input.value.strip()
+                new_role_prompt = self.prompt_input.value.strip()
 
-    return embed
+                if new_role_name == role:
+                    self.data[role]["prompt"] = new_role_prompt
+                    self.data[role]["author_id"] = str(interaction.user.id)
+                else:
+                    self.data[new_role_name] = {
+                        "name": new_role_name,
+                        "prompt": new_role_prompt,
+                        "author_id": str(interaction.user.id)
+                    }
+                    del self.data[role]
 
-async def get_xp(self, member: discord.Member) -> str:
-    return await self.xp.get_user_level(member)
+                FILE_WRITER.save_json(filename="roles", data=self.data)
+                await interaction.response.send_message(f"A '{new_role_name}' szerep sikeresen módosítva!",
+                                                        ephemeral=True)
 
-"""
+        if role in data:
+            modal = ModifyRoleModal(bot_client=self._commands_bot, data=data)
+            await self.interaction.response.send_modal(modal)
+
+    _variation_cache: dict = {}
+    async def generate_image(self, *, model: Optional[str], prompt: str) -> None:
+        await self.interaction.response.defer()
+
+        try:
+            loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
+            imagen: ImagenAPIs = ImagenAPIs()
+            path = await loop.run_in_executor(
+                None,
+                lambda: imagen.imagen_response(model=model, prompt=prompt)
+            )
+            print(type(path))
+
+        except Exception as err:
+            print(f"HIBA (CommandService.generate_image): {err}")
+            return
+
+        if not path:
+            await self.interaction.followup.send("Nem sikerült a kép generálása.")
+            return
+
+        try:
+            filename = Path(path).stem
+            print(type(filename))
+
+            img_file = FILE_READER.read_img(file_name=filename)
+            print(type(img_file))
+
+            if not img_file:
+                await self.interaction.followup.send("Nem sikerült a kép generálása.")
+                return
+
+        except Exception as err:
+            print(f"HIBA (CommandService.generate_image): {err}")
+            return
+
+        embed: discord.Embed = create_embed(
+            description=prompt,
+            color=random.randint(0, 0xFFFFFF),
+            image_url=f"attachment://{img_file.filename}"
+        )
+
+        uuid_str: str = str(uuid.uuid4())
+        CommandService._variation_cache[uuid_str] = prompt
+
+        ## VARIANTION VIEW CLASS ##
+        class VariationView(discord.ui.View):
+            def __init__(self, *, uuid_str: str, cache: dict):
+                super().__init__(timeout=300)
+                self.uuid_str = uuid_str
+                self.cache = cache
+
+            @discord.ui.button(label="🔄", style=discord.ButtonStyle.primary)
+            async def variation_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+                prompt: str = self.cache.get(self.uuid_str)
+                if not prompt:
+                    await interaction.response.send_message("Nem található a kép.", ephemeral=True, delete_after=5)
+                    return
+
+                cmd_service = CommandService(interaction=interaction)
+                await cmd_service.generate_image(model=model, prompt=prompt)
+
+            async def on_timeout(self) -> None:
+                if self.uuid_str in self.cache:
+                    del self.cache[self.uuid_str]
+
+
+        view = VariationView(uuid_str=uuid_str, cache=CommandService._variation_cache)
+
+        await self.interaction.followup.send(
+            embed=embed,
+            view=view,
+            file=img_file
+        )
+
+        try:
+            Path(path).unlink()
+
+        except Exception as err:
+            print(f"HIBA (CommandService.generate_image): {err}")
+            return
+
+
+        """
+
+        imagen: ImagenAPIs = ImagenAPIs()
+        response = imagen.imagen_response(model=model, prompt=prompt)
+        print(type(response), response)
+        message = await self.interaction.send_message(file=await imagen.imagen_response(model=model, prompt=prompt))
+        print(type(message))
+        """
+
