@@ -13,7 +13,7 @@ from source.file_service_handler.file_writer import LocalFileWriter
 TIME: int = 25200  # 7 óra
 MAX_RETRIES: int = 3
 FILE: str = "youtube_live_url"
-TOKENS: tuple[str, str] = ("YOUTUBE_TEST_CHANNEL_ID", "YOUTUBE_API_KEY")
+TOKENS: tuple[str, str] = ("YOUTUBE_CHANNEL_ID", "YOUTUBE_API_KEY")
 FILE_READER: LocalFileReader = LocalFileReader()
 FILE_WRITER: LocalFileWriter = LocalFileWriter()
 

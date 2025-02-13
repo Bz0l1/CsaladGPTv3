@@ -64,7 +64,7 @@ class CommandHandler:
             :param interaction: discord.Interaction - Az interakció objektum
             :return:
             """
-            cha_id: int = int(FILE_READER.get_token(token_name="DISCORD_TEST_STREAM_CHANNEL_ID"))
+            cha_id: int = int(FILE_READER.get_token(token_name="DISCORD_STREAM_CHANNEL_ID"))
             channel_id: discord.TextChannel = self._bot.get_channel(cha_id)
 
             if interaction.channel.id == channel_id.id:
@@ -88,7 +88,7 @@ class CommandHandler:
             :param nyelv: str - A nyelv kódja (opcionális)
             :return:
             """
-            chat_id: int = int(FILE_READER.get_token(token_name="DISCORD_TEST_IMA_CHANNEL_ID"))
+            chat_id: int = int(FILE_READER.get_token(token_name="DISCORD_IMA_CHANNEL_ID"))
             channel_id: discord.TextChannel = self._bot.get_channel(chat_id)
 
             if interaction.channel_id == channel_id.id:
@@ -284,7 +284,38 @@ class CommandHandler:
 
         @app_commands.command(name="szerep_módosítása", description="Szerep módosítása")
         async def modify_role(interaction: discord.Interaction, *, role: str) -> None:
-            pass
+            roles: dict = FILE_READER.read_json(file_name="roles")
+            author_id: int = interaction.user.id
+
+            if role not in roles:
+                await interaction.response.send_message(content="Ez a szerep nem létezik.", ephemeral=True,
+                                                        delete_after=10)
+                return
+
+            if roles[role]["author_id"] != str(author_id):
+                await interaction.response.send_message(content="Nincs jogod módosítani ezt a szerepet.",
+                                                        ephemeral=True,
+                                                        delete_after=10)
+                return
+
+            command_service: CommandService = CommandService(interaction=interaction)
+            await command_service.modify_role(role=role)
+
+        @modify_role.autocomplete("role")
+        async def role_autocomplete(interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+            roles_data = FILE_READER.read_json(file_name="roles")
+            user_id = str(interaction.user.id)
+            roles = [
+                role.get("name", "ismeretlen szerep")
+                for role in roles_data.values()
+                if role.get("author_id") == user_id
+            ]
+
+            return [
+                app_commands.Choice(name=role, value=role)
+                for role in roles
+                if current.lower() in role.lower()
+            ]
 
         ##### IMAGE GENERATOR #####
         @app_commands.command(name="meme", description="Mém generátor")
@@ -293,14 +324,27 @@ class CommandHandler:
 
         @app_commands.command(name="kép_generálás", description="Kép generátor")
         @app_commands.choices(model=[
-            app_commands.Choice(name="imagen3 (Gemini)", value="imagen-3.0-generate-002"),
-            app_commands.Choice(name="DALL-E (OpenAI)", value="dall-e-3"),
+            app_commands.Choice(name="imagen3 (Gemini)", value="imagen"),
+            app_commands.Choice(name="DALL-E (OpenAI) (NEM ELÉRHETŐ)", value="imagen"),
         ])
         async def generate_image(interaction: discord.Interaction, *, prompt: str,
-                                 model: Optional[str] = "imagen-3.0-generate-002") -> None:
-            pass
+                                 model: Optional[str] = "imagen") -> None:
+            cha_id: int = int(FILE_READER.get_token(token_name="DISCORD_IMAGEN_CHANNEL_ID"))
+            channel_id: discord.TextChannel = self._bot.get_channel(cha_id)
+
+            if interaction.channel.id == channel_id.id:
+                command_service: CommandService = CommandService(interaction=interaction)
+                await command_service.generate_image(prompt=prompt, model=model)
+            else:
+                await interaction.response.send_message(
+                    content=f"Ezt a parancsot csak a <#{cha_id}> szobában használhatod.\n"
+                            "```/help kép_generálás```", delete_after=10, ephemeral=True)
+                return
+
 
         ############################
-        discord_commands: list = [ping, help, gogu, ima, percek, setperc, javaslat, say, roles, new_role, delete_role]
+        ############################
+        discord_commands: list = [ping, help, gogu, ima, percek, setperc, javaslat, say, roles, new_role, delete_role,
+                                  modify_role, generate_image]
         for command in discord_commands:
             self._bot.tree.add_command(command)

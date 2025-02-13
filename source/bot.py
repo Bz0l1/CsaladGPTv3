@@ -6,6 +6,9 @@ from automation_service_handler.automation import AutomationService
 from file_service_handler.file_reader import LocalFileReader
 from command_service_handler.command_handler import CommandHandler
 
+
+from datetime import timedelta
+
 ######### KONSTANSOK #########
 FILE_READER: LocalFileReader = LocalFileReader()
 
@@ -29,9 +32,9 @@ class Bot(commands.Bot):
 
         :return:
         """
-        self.guild: discord.Object = discord.Object(id=int(FILE_READER.get_token(token_name="DISCORD_TEST_GUILD_ID")))
-        self.main_channel_id: int = int(FILE_READER.get_token(token_name="DISCORD_TEST_MAIN_CHANNEL_ID"))
-        self.bot_channel_id: int = int(FILE_READER.get_token(token_name="DISCORD_TEST_BOT_CHANNEL_ID"))
+        self.guild: discord.Object = discord.Object(id=int(FILE_READER.get_token(token_name="DISCORD_GUILD_ID")))
+        self.main_channel_id: int = int(FILE_READER.get_token(token_name="DISCORD_MAIN_CHANNEL_ID"))
+        self.bot_channel_id: int = int(FILE_READER.get_token(token_name="DISCORD_BOT_CHANNEL_ID"))
 
     async def _sync_commands(self) -> None:
         """
@@ -60,7 +63,7 @@ class Bot(commands.Bot):
         await self.change_presence(activity=discord.Game(name="/help | z0l1"))
         channel = self.get_channel(self.main_channel_id)
         await channel.send("Szia Család!")
-        # await self.update_notification()
+        await self.update_notification()
 
     async def on_interaction(self, interaction: discord.Interaction) -> None:
         """
@@ -82,6 +85,7 @@ class Bot(commands.Bot):
         :todo: az XP rendszer implementálása valahol itt...
         """
         await self.process_commands(message)
+        print(f"{message.author}: {message.content}")
 
     async def update_notification(self) -> None:
         """
@@ -104,4 +108,4 @@ if __name__ == '__main__':
     intents.members = True
     intents.message_content = True
     bot = Bot(intents=intents)
-    bot.run(FILE_READER.get_token(token_name="DISCORD_TEST_TOKEN"))
+    bot.run(FILE_READER.get_token(token_name="DISCORD_TOKEN"))

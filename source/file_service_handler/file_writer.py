@@ -9,7 +9,8 @@ FILENAMES: dict[str, str] = {
     "youtube_live_url": "youtube_live_url.txt",
     "ima_date_time": "ima_date_time.txt",
     "perc": "perc.txt",
-    "roles": "roles.json"
+    "roles": "roles.json",
+    "javaslat": "javaslat.json",
 }
 
 
@@ -96,3 +97,13 @@ class LocalFileWriter:
                 json.dump(data, file, ensure_ascii=False, indent=4)
         except Exception as err:
             print(f"HIBA (file_writer.py): {err}")
+
+    def path_generator(self, *, filename: str) -> str:
+        """
+        A fájl elérési útjának a generálása.
+
+        :param filename: str - A fájl neve.
+        :return: str - A fájl elérési útja.
+        """
+
+        return str(self.local_db_path / filename)
