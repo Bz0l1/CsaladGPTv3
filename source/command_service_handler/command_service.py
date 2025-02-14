@@ -59,6 +59,24 @@ class CommandService:
 
         :param interaction: discord.Interaction - az interakció (ha a user parancsot ad)
         :param bot: commands.Bot - a bot (ha a bot maga futtatja a parancsot)
+
+        :argument interaction: Optional[discord.Interaction] - amikor parancsot kap a bot
+        :argument bot: Optional[commands.Bot] - amikor a bot valamelyik parancsot maga futtatja
+        :argument bot_for_automatization: Optional[commands.Bot] - amikor a bot automatikusan fut
+
+        :function: ping - A bot válaszidejének mérése.
+        :function: help - Segítség a parancsokhoz.
+        :function: gogu - Gogu streamjének ellenőrzése.
+        :function: ima - Napi ima.
+        :function: percek - Percek a következő videóig.
+        :function: setperc - Percek beállítása.
+        :function: javaslat - Javaslatok.
+        :function: say - Szöveggenerálás.
+        :function: roles - Szerepek.
+        :function: new_role - Új szerep hozzáadása.
+        :function: delete_role - Szerep törlése.
+        :function: modify_role - Szerep módosítása.
+        :function: generate_image - Kép generálása.
         """
         self.interaction: Optional[discord.Interaction] = interaction  # amikor parancsot kap a bot
         self.bot_client: Optional[discord.Client] = (interaction.client if interaction is not None else None)
@@ -191,7 +209,7 @@ class CommandService:
         elif self.bot_for_automatization is not None:
             if is_live:
                 channel: discord.TextChannel = self.bot_for_automatization.get_channel(
-                    int(FILE_READER.get_token(token_name="DISCORD_STREAM_CHANNEL_ID"))
+                    int(FILE_READER.get_token(token_name="DISCORD_TEST_STREAM_CHANNEL_ID"))
                 )
                 await channel.send(content="@everyone")
                 await channel.send(
@@ -230,7 +248,7 @@ class CommandService:
         if not is_command:
             FILE_WRITER.save_ima_date_time(time=timestamp.isoformat())
             channel: discord.TextChannel = self.bot_for_automatization.get_channel(
-                int(FILE_READER.get_token(token_name="DISCORD_IMA_CHANNEL_ID")))
+                int(FILE_READER.get_token(token_name="DISCORD_TEST_IMA_CHANNEL_ID")))
             await channel.send(
                 embed=create_embed(title=title, description=description, color=color, timestamp=timestamp,
                                    footer_text=footer_text, thumbnail_url=thumbnail_url))
@@ -282,7 +300,7 @@ class CommandService:
                 kuldo_szoveg = self.kuldo.value or "Egy névtelen családtag"
 
                 if self.is_forbot is None:
-                    channel_id = int(FILE_READER.get_token(token_name="DISCORD_SUGGESTION_CHANNEL_ID"))
+                    channel_id = int(FILE_READER.get_token(token_name="DISCORD_TEST_SUGGESTION_CHANNEL_ID"))
                     channel = self.bot_client.get_channel(channel_id)
 
                     if channel:
@@ -487,32 +505,72 @@ class CommandService:
             await self.interaction.response.send_modal(modal)
 
     _variation_cache: dict = {}
+
     async def generate_image(self, *, model: Optional[str], prompt: str) -> None:
+        """
+        Kép generálása.
+
+        :param model: str - a modell
+        :param prompt: str - a prompt
+        :return:
+        """
         await self.interaction.response.defer()
 
+        status_msg: Optional[discord.Message] = None
+        animation_task: Optional[asyncio.Task] = None
+
+        async def animate_dots(message: discord.Message) -> None:
+            dots: int = 0
+            while True:
+                dots = (dots % 3) + 1
+                content: str = f"🎨 A kép éppen készül{'.' * dots}"
+                try:
+                    await message.edit(content=content)
+                except (discord.NotFound, discord.Forbidden):
+                    break
+                except Exception as e:
+                    print(f"Hiba az üzenet frissítésekor: {e}")
+                    break
+                await asyncio.sleep(0.5)
+
         try:
+            status_msg = await self.interaction.followup.send("🎨A kép éppen készül.", wait=True)
+            animation_task = asyncio.create_task(animate_dots(status_msg))
+
             loop: asyncio.AbstractEventLoop = asyncio.get_event_loop()
             imagen: ImagenAPIs = ImagenAPIs()
-            path = await loop.run_in_executor(
+            path: str = await loop.run_in_executor(
                 None,
                 lambda: imagen.imagen_response(model=model, prompt=prompt)
             )
-            print(type(path))
 
         except Exception as err:
             print(f"HIBA (CommandService.generate_image): {err}")
+            if animation_task:
+                animation_task.cancel()
+            if status_msg:
+                try:
+                    await status_msg.delete()
+                except Exception as e:
+                    print(f"Hiba az üzenet törlésekor: {e}")
             return
+
+        finally:
+            if animation_task:
+                animation_task.cancel()
+            if status_msg:
+                try:
+                    await status_msg.delete()
+                except Exception as e:
+                    print(f"Hiba az üzenet törlésekor: {e}")
 
         if not path:
             await self.interaction.followup.send("Nem sikerült a kép generálása.")
             return
 
         try:
-            filename = Path(path).stem
-            print(type(filename))
-
+            filename: str = Path(path).stem
             img_file = FILE_READER.read_img(file_name=filename)
-            print(type(img_file))
 
             if not img_file:
                 await self.interaction.followup.send("Nem sikerült a kép generálása.")
@@ -531,30 +589,45 @@ class CommandService:
         uuid_str: str = str(uuid.uuid4())
         CommandService._variation_cache[uuid_str] = prompt
 
-        ## VARIANTION VIEW CLASS ##
         class VariationView(discord.ui.View):
+            """
+            A kép megtekintésének a view-ja. A gomb miatt van szükség rá.
+
+            :param uuid_str: str - az azonosító
+            :param cache: dict - a cache
+
+            :function: variation_btn - A gomb lenyomásának a kezelése.
+            :function: on_timeout - A view timeout-ja.
+            """
             def __init__(self, *, uuid_str: str, cache: dict):
                 super().__init__(timeout=300)
-                self.uuid_str = uuid_str
-                self.cache = cache
+                self.uuid_str: str = uuid_str
+                self.cache: dict = cache
 
             @discord.ui.button(label="🔄", style=discord.ButtonStyle.primary)
-            async def variation_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-                prompt: str = self.cache.get(self.uuid_str)
+            async def variation_btn(self, interaction: discord.Interaction, button: discord.ui.Button) -> None:
+                """
+                A gomb lenyomásának a kezelése.
+
+                :param interaction: discord.Interaction - az interakció objektum
+                :param button: discord.ui.Button - a gomb objektum
+                :return:
+                """
+                prompt: Optional[str] = self.cache.get(self.uuid_str)
                 if not prompt:
                     await interaction.response.send_message("Nem található a kép.", ephemeral=True, delete_after=5)
                     return
 
-                cmd_service = CommandService(interaction=interaction)
+                cmd_service: CommandService = CommandService(interaction=interaction)
                 await cmd_service.generate_image(model=model, prompt=prompt)
 
             async def on_timeout(self) -> None:
                 if self.uuid_str in self.cache:
                     del self.cache[self.uuid_str]
 
+        view: VariationView = VariationView(uuid_str=uuid_str, cache=CommandService._variation_cache)
 
-        view = VariationView(uuid_str=uuid_str, cache=CommandService._variation_cache)
-
+        embed.set_author(name=f"{self.interaction.user.display_name}", icon_url=self.interaction.user.avatar.url)
         await self.interaction.followup.send(
             embed=embed,
             view=view,
@@ -563,18 +636,6 @@ class CommandService:
 
         try:
             Path(path).unlink()
-
         except Exception as err:
             print(f"HIBA (CommandService.generate_image): {err}")
-            return
-
-
-        """
-
-        imagen: ImagenAPIs = ImagenAPIs()
-        response = imagen.imagen_response(model=model, prompt=prompt)
-        print(type(response), response)
-        message = await self.interaction.send_message(file=await imagen.imagen_response(model=model, prompt=prompt))
-        print(type(message))
-        """
 

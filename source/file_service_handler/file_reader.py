@@ -54,8 +54,6 @@ class LocalFileReader:
     def read_img(self, *, file_name: str) -> discord.File:
         try:
             file_path: Path = self.local_db_path / f"{file_name}.png"
-
-            with open(file_path, 'rb') as file:
-                return File(file, filename=Path(file_path).name)
+            return File(str(file_path), filename=file_path.name)
         except FileNotFoundError:
             return File("")

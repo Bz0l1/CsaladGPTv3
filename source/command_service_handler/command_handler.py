@@ -14,12 +14,41 @@ FILE_READER: LocalFileReader = LocalFileReader()
 ##################
 
 class CommandHandler:
+    """
+    A parancsokat kezelő osztály.
+
+    :argument bot: commands.Bot - A bot objektum.
+    :argument _gpt_roles: dict - A GPT szerepek az adatbázisban.
+
+    :function register_commands - A parancsok regisztrálása.
+    """
+
     def __init__(self, *, bot: commands.Bot) -> None:
         self._bot: commands.Bot = bot
         self.register_commands()
         self._gpt_roles: dict = FILE_READER.read_json(file_name="roles")
 
     def register_commands(self) -> None:
+        """
+        A parancsok regisztrálása.
+
+        :function: ping - Ping parancs.
+        :function: help - Parancsok listázása. TODO: kiegészíteni
+        :function: gogu - Étesítést küld ha Gogu streamel.
+        :function: ima - Bibliai idézetet mond.
+        :function: percek - Kiírja a jelenlegi perceket.
+        :function: setperc - Beállítja a percek számát.
+        :function: javaslat - Javaslatot küld a bot vagy a szerver fejlesztésére. TODO: DM
+        :function: say - CsaládGPT az AI segítségével válaszol neked. TODO: Privát üzenet, DeepSeek
+        :function: roles - Szerepek listázása.
+        :function: new_role - Szerep hozzáadása.
+        :function: delete_role - Szerep törlése.
+        :function: modify_role - Szerep módosítása.
+        :function: generate_image - Kép generátor. TODO: DALL-E, Flux
+
+        :return:
+        """
+
         ##### RENDSZER PARANCSOK #####
         @app_commands.command(name="ping", description="Ping parancs")
         async def ping(interaction: discord.Interaction) -> None:
@@ -64,7 +93,7 @@ class CommandHandler:
             :param interaction: discord.Interaction - Az interakció objektum
             :return:
             """
-            cha_id: int = int(FILE_READER.get_token(token_name="DISCORD_STREAM_CHANNEL_ID"))
+            cha_id: int = int(FILE_READER.get_token(token_name="DISCORD_TEST_STREAM_CHANNEL_ID"))
             channel_id: discord.TextChannel = self._bot.get_channel(cha_id)
 
             if interaction.channel.id == channel_id.id:
@@ -88,7 +117,7 @@ class CommandHandler:
             :param nyelv: str - A nyelv kódja (opcionális)
             :return:
             """
-            chat_id: int = int(FILE_READER.get_token(token_name="DISCORD_IMA_CHANNEL_ID"))
+            chat_id: int = int(FILE_READER.get_token(token_name="DISCORD_TEST_IMA_CHANNEL_ID"))
             channel_id: discord.TextChannel = self._bot.get_channel(chat_id)
 
             if interaction.channel_id == channel_id.id:
@@ -185,7 +214,7 @@ class CommandHandler:
         async def say(interaction: discord.Interaction, *, model: str = "gpt-4o-mini",
                       role: Optional[str] = None, message: str) -> None:
             """
-            CsaládGPT az AI segítségével válaszol neked
+            CsaládGPT az AI segítségével válaszol
 
             :param interaction:
             :param model:
@@ -237,6 +266,13 @@ class CommandHandler:
 
         @app_commands.command(name="új_szerep", description="Szerep hozzáadása")
         async def new_role(interaction: discord.Interaction, *, role: str) -> None:
+            """
+            Szerep hozzáadása
+
+            :param interaction: discord.Interaction - Az interakció objektum
+            :param role: str - A szerep neve
+            :return:
+            """
             roles: dict = FILE_READER.read_json(file_name="roles")
 
             if role in roles:
@@ -250,6 +286,13 @@ class CommandHandler:
 
         @app_commands.command(name="szerep_törlése", description="Szerep törlése")
         async def delete_role(interaction: discord.Interaction, *, role: str) -> None:
+            """
+            Szerep törlése
+
+            :param interaction: discord.Interaction - Az interakció objektum
+            :param role: str - A szerep neve
+            :return:
+            """
             roles: dict = FILE_READER.read_json(file_name="roles")
             author_id: int = interaction.user.id
 
@@ -284,6 +327,13 @@ class CommandHandler:
 
         @app_commands.command(name="szerep_módosítása", description="Szerep módosítása")
         async def modify_role(interaction: discord.Interaction, *, role: str) -> None:
+            """
+            Szerep módosítása
+
+            :param interaction: discord.Interaction - Az interakció objektum
+            :param role: str - A szerep neve
+            :return:
+            """
             roles: dict = FILE_READER.read_json(file_name="roles")
             author_id: int = interaction.user.id
 
@@ -320,6 +370,14 @@ class CommandHandler:
         ##### IMAGE GENERATOR #####
         @app_commands.command(name="meme", description="Mém generátor")
         async def meme(interaction: discord.Interaction, *, text: str) -> None:
+            """
+            Mém generátor
+            TODO - Mém generátor
+
+            :param interaction: discord.Interaction - Az interakció objektum
+            :param text: TODO - kitalálni, API keresés
+            :return:
+            """
             pass
 
         @app_commands.command(name="kép_generálás", description="Kép generátor")
@@ -329,7 +387,16 @@ class CommandHandler:
         ])
         async def generate_image(interaction: discord.Interaction, *, prompt: str,
                                  model: Optional[str] = "imagen") -> None:
-            cha_id: int = int(FILE_READER.get_token(token_name="DISCORD_IMAGEN_CHANNEL_ID"))
+            """
+            Kép generátor
+
+            :param interaction: discord.Interaction - Az interakció objektum
+            :param prompt: str - A kép generálásához szükséges szöveg
+            :param model: str - A modell neve (opcionális) TODO: DALL-E, Flux
+            :return:
+            """
+
+            cha_id: int = int(FILE_READER.get_token(token_name="DISCORD_TEST_IMAGEN_CHANNEL_ID"))
             channel_id: discord.TextChannel = self._bot.get_channel(cha_id)
 
             if interaction.channel.id == channel_id.id:
@@ -340,7 +407,6 @@ class CommandHandler:
                     content=f"Ezt a parancsot csak a <#{cha_id}> szobában használhatod.\n"
                             "```/help kép_generálás```", delete_after=10, ephemeral=True)
                 return
-
 
         ############################
         ############################
