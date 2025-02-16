@@ -1,3 +1,4 @@
+from fileinput import filename
 from pathlib import Path
 from typing import Optional
 
@@ -54,6 +55,13 @@ class LocalFileReader:
     def read_img(self, *, file_name: str) -> discord.File:
         try:
             file_path: Path = self.local_db_path / f"{file_name}.png"
+            return File(str(file_path), filename=file_path.name)
+        except FileNotFoundError:
+            return File("")
+
+    def get_alert(self):
+        try:
+            file_path: Path = self.local_db_path / "alert.gif"
             return File(str(file_path), filename=file_path.name)
         except FileNotFoundError:
             return File("")

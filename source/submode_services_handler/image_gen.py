@@ -50,3 +50,7 @@ class ImagenAPIs:
                             print(f"HIBA (ImagenAPIs.imagen_response): {err}")
                 except Exception as err:
                     print(f"HIBA (ImagenAPIs.imagen_response): {err}")
+
+if __name__ == '__main__':
+    imagen = ImagenAPIs()
+    imagen.imagen_response(model="imagen", prompt="A beautiful sunset over the city")
