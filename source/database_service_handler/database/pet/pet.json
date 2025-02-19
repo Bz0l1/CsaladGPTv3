@@ -1,0 +1,85 @@
+{
+  "696657530537115669": {
+    "dc_id": "696657530537115669",
+    "dc_name": "__z0l1__",
+    "age_days": 5,
+    "money": 100,
+    "energy": 100,
+    "mood": 10,
+    "hunger": 70,
+    "thirst": 40,
+    "hygiene": 50,
+    "friends": [
+      "1"
+    ],
+    "lonely": 30,
+    "inventory": {
+      "items": [
+        {
+          "1": {
+            "amount": 2
+          }
+        }
+      ],
+      "equipped": [
+        {
+          "head": null,
+          "body": "1",
+          "arms": null,
+          "legs": null,
+          "feet": null,
+          "accessory": null
+        }
+      ]
+    },
+    "stock": {
+      "portfolio": [
+        {
+          "1": {
+            "quantity": 10,
+            "invested_dates": [
+              [
+                "2021-01-01",
+                100
+              ],
+              [
+                "2021-01-02",
+                200
+              ]
+            ],
+            "invested_value": 300,
+            "current_value": 400,
+            "whithdraw_dates": [
+              [
+                "2021-01-03",
+                400
+              ]
+            ]
+          }
+        }
+      ]
+    },
+    "last_update": "2025-02-17-10:00:00",
+    "last_interaction": "2025-02-17-12:00:00",
+    "daily_limits": {
+      "work": 3,
+      "sleep": 2,
+      "relax": 2,
+      "party": 1,
+      "steal": 2,
+      "bath": 2
+    },
+    "current_mission_id": "2",
+    "completed_mission_ids": [
+      "1"
+    ],
+    "achievements": [
+      "1",
+      "2"
+    ],
+    "effects": [
+      "1"
+    ],
+    "last_action": "work"
+  }
+}

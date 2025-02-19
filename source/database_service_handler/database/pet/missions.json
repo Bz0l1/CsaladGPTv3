@@ -1,0 +1,40 @@
+{
+  "1": {
+    "title": "Tutorial",
+    "description": "Tanulj meg mindent a játékról!",
+    "requirements": {
+      "money": 0,
+      "hunger": 0,
+      "thirst": 0,
+      "hygiene": 0,
+      "lonely": 0,
+      "mood": 0,
+      "age_days": 0,
+      "friends": 0,
+      "items": []
+    },
+    "rewards": {
+      "money": 3,
+      "hunger": 0,
+      "thirst": 0,
+      "hygiene": 0,
+      "lonely": 0,
+      "mood": 0,
+      "age_days": 0,
+      "friends": 0,
+      "items": []
+    },
+    "type": "main",
+    "gave_by": "Gogu",
+    "completed_if": {
+      "items": {
+        "1": 2
+      }
+    },
+    "completed_by": [
+      "696657530537115669"
+    ],
+    "has_timer": false,
+    "timer": 0
+  }
+}

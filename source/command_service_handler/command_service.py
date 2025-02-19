@@ -209,7 +209,7 @@ class CommandService:
         elif self.bot_for_automatization is not None:
             if is_live:
                 channel: discord.TextChannel = self.bot_for_automatization.get_channel(
-                    int(FILE_READER.get_token(token_name="DISCORD_STREAM_CHANNEL_ID"))
+                    int(FILE_READER.get_token(token_name="DISCORD_TEST_STREAM_CHANNEL_ID"))
                 )
                 await channel.send(content="@everyone")
                 await channel.send(
@@ -248,7 +248,7 @@ class CommandService:
         if not is_command:
             FILE_WRITER.save_ima_date_time(time=timestamp.isoformat())
             channel: discord.TextChannel = self.bot_for_automatization.get_channel(
-                int(FILE_READER.get_token(token_name="DISCORD_IMA_CHANNEL_ID")))
+                int(FILE_READER.get_token(token_name="DISCORD_TEST_IMA_CHANNEL_ID")))
             await channel.send(
                 embed=create_embed(title=title, description=description, color=color, timestamp=timestamp,
                                    footer_text=footer_text, thumbnail_url=thumbnail_url))
@@ -300,7 +300,7 @@ class CommandService:
                 kuldo_szoveg = self.kuldo.value or "Egy névtelen családtag"
 
                 if self.is_forbot is None:
-                    channel_id = int(FILE_READER.get_token(token_name="DISCORD_SUGGESTION_CHANNEL_ID"))
+                    channel_id = int(FILE_READER.get_token(token_name="DISCORD_TEST_SUGGESTION_CHANNEL_ID"))
                     channel = self.bot_client.get_channel(channel_id)
 
                     if channel:

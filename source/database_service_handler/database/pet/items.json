@@ -1,0 +1,13 @@
+{
+  "1": {
+    "name": "alma",
+    "type": "food",
+    "description": "Mindennap egy alma és az orvost távol tartja",
+    "price": 10,
+    "rarity": 0.1,
+    "effects": {
+      "hunger": 4,
+      "happiness": 5
+    }
+  }
+}

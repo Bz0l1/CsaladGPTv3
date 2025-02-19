@@ -1,0 +1,25 @@
+{
+  "1": {
+    "name": "Gulden forradalom",
+    "description": "A Gulden forradalom hatására pénzügyi válság alakult ki.",
+    "effects": {
+      "stock": {
+        "type": "all",
+        "exclusive": null,
+        "market_volatility": 0.2,
+        "demand_surge": 0,
+        "demand_drop": 0.9
+      },
+      "pet": {
+        "mood": -5,
+        "hunger": 5
+      },
+      "shop": {
+        "type": "food",
+        "exlusive": null,
+        "price": 1.5,
+        "rarity": 0.5
+      }
+    }
+  }
+}

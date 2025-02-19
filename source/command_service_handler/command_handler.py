@@ -93,7 +93,7 @@ class CommandHandler:
             :param interaction: discord.Interaction - Az interakció objektum
             :return:
             """
-            cha_id: int = int(FILE_READER.get_token(token_name="DISCORD_STREAM_CHANNEL_ID"))
+            cha_id: int = int(FILE_READER.get_token(token_name="DISCORD_TEST_STREAM_CHANNEL_ID"))
             channel_id: discord.TextChannel = self._bot.get_channel(cha_id)
 
             if interaction.channel.id == channel_id.id:
@@ -117,7 +117,7 @@ class CommandHandler:
             :param nyelv: str - A nyelv kódja (opcionális)
             :return:
             """
-            chat_id: int = int(FILE_READER.get_token(token_name="DISCORD_IMA_CHANNEL_ID"))
+            chat_id: int = int(FILE_READER.get_token(token_name="DISCORD_TEST_IMA_CHANNEL_ID"))
             channel_id: discord.TextChannel = self._bot.get_channel(chat_id)
 
             if interaction.channel_id == channel_id.id:
@@ -396,7 +396,7 @@ class CommandHandler:
             :return:
             """
 
-            cha_id: int = int(FILE_READER.get_token(token_name="DISCORD_IMAGEN_CHANNEL_ID"))
+            cha_id: int = int(FILE_READER.get_token(token_name="DISCORD_TEST_IMAGEN_CHANNEL_ID"))
             channel_id: discord.TextChannel = self._bot.get_channel(cha_id)
 
             if interaction.channel.id == channel_id.id:

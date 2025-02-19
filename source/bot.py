@@ -29,9 +29,9 @@ class Bot(commands.Bot):
 
         :return:
         """
-        self.guild: discord.Object = discord.Object(id=int(FILE_READER.get_token(token_name="DISCORD_GUILD_ID")))
-        self.main_channel_id: int = int(FILE_READER.get_token(token_name="DISCORD_MAIN_CHANNEL_ID"))
-        self.bot_channel_id: int = int(FILE_READER.get_token(token_name="DISCORD_BOT_CHANNEL_ID"))
+        self.guild: discord.Object = discord.Object(id=int(FILE_READER.get_token(token_name="DISCORD_TEST_GUILD_ID")))
+        self.main_channel_id: int = int(FILE_READER.get_token(token_name="DISCORD_TEST_MAIN_CHANNEL_ID"))
+        self.bot_channel_id: int = int(FILE_READER.get_token(token_name="DISCORD_TEST_BOT_CHANNEL_ID"))
 
     async def _sync_commands(self) -> None:
         """
@@ -105,4 +105,4 @@ if __name__ == '__main__':
     intents.members = True
     intents.message_content = True
     bot = Bot(intents=intents)
-    bot.run(FILE_READER.get_token(token_name="DISCORD_TOKEN"))
+    bot.run(FILE_READER.get_token(token_name="DISCORD_TEST_TOKEN"))
