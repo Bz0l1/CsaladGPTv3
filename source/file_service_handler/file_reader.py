@@ -34,7 +34,12 @@ class LocalFileReader:
 
     def read_json(self, *, file_name: str) -> dict:
         try:
-            file_path: Path = self.local_db_path / f"{file_name}.json"
+            if file_name in ["pet", "items"]:
+                file_path: Path = self.local_db_path / "pet" / f"{file_name}.json"
+            else:
+                file_path: Path = self.local_db_path / f"{file_name}.json"
+
+            print(file_path)
 
             with open(file_path, 'r', encoding="utf-8") as file:
                 data: dict[str, str] = json.load(file)

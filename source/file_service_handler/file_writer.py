@@ -11,6 +11,7 @@ FILENAMES: dict[str, str] = {
     "perc": "perc.txt",
     "roles": "roles.json",
     "javaslat": "javaslat.json",
+    "pet": "pet.json",
 }
 
 
@@ -92,7 +93,12 @@ class LocalFileWriter:
         :return: None
         """
         try:
-            file_path: Path = self.local_db_path / FILENAMES[filename]
+            if filename in ["pet"]:
+                file_path: Path = self.local_db_path / "pet" / FILENAMES[filename]
+            else:
+                file_path: Path = self.local_db_path / f"{filename}.json"
+
+            print(file_path)
             with open(file_path, 'w', encoding='utf-8') as file:
                 json.dump(data, file, ensure_ascii=False, indent=4)
         except Exception as err:

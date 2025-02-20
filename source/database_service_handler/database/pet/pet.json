@@ -3,7 +3,9 @@
     "dc_id": "696657530537115669",
     "dc_name": "__z0l1__",
     "age_days": 5,
-    "money": 100,
+    "money": 300,
+    "cash": 100,
+    "savings": 200,
     "energy": 100,
     "mood": 10,
     "hunger": 70,
@@ -80,6 +82,10 @@
     "effects": [
       "1"
     ],
-    "last_action": "work"
+    "last_action": "work",
+    "is_afk": false,
+    "afk_duration": 0,
+    "afk_start": null,
+    "is_dead": false
   }
 }
