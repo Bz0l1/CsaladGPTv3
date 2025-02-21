@@ -150,63 +150,88 @@ class Pet:
 
     ### Setters ###
     @age.setter
-    def age(self, *, value: int) -> None:
+    def age(self, value: int) -> None:
         self._age = value
 
     @money.setter
-    def money(self, *, value: int) -> None:
-        self._money = value
+    def money(self, value: int) -> None:
+        if self.money - value < 0:
+            self._money = 0
 
     @energy.setter
-    def energy(self, *, value: int) -> None:
-        self._energy = value
+    def energy(self, value: int) -> None:
+        if self.energy - value < 0:
+            self._energy = 0
+
+        if self.energy + value > 100:
+            self._energy = 100
 
     @mood.setter
-    def mood(self, *, value: int) -> None:
-        self._mood = value
+    def mood(self, value: int) -> None:
+        if self.mood - value < 0:
+            self._mood = 0
+
+        if self.mood + value > 100:
+            self._mood = 100
 
     @hunger.setter
     def hunger(self, value: int) -> None:
-        self._hunger = value
+        if self.hunger - value < 0:
+            self._hunger = 0
+
+        if self.hunger + value > 100:
+            self._hunger = 100
 
     @thirst.setter
-    def thirst(self, *, value: int) -> None:
-        self._thirst = value
+    def thirst(self, value: int) -> None:
+        if self.thirst - value < 0:
+            self._thirst = 0
+
+        if self.thirst + value > 100:
+            self._thirst = 100
 
     @hygiene.setter
-    def hygiene(self, *, value: int) -> None:
-        self._hygiene = value
+    def hygiene(self, value: int) -> None:
+        if self.hygiene - value < 0:
+            self._hygiene = 0
+
+        if self.hygiene + value > 100:
+            self._hygiene = 100
 
     @lonely.setter
-    def lonely(self, *, value: int) -> None:
-        self._lonely = value
+    def lonely(self, value: int) -> None:
+        if self.lonely - value < 0:
+            self._lonely = 0
+
+        if self.lonely + value > 100:
+            self._lonely = 100
 
     @last_update.setter
-    def last_update(self, *, value: datetime.datetime) -> None:
+    def last_update(self, value: datetime.datetime) -> None:
         self._last_update = value
 
     @last_interaction.setter
-    def last_interaction(self, *, value: datetime.datetime) -> None:
+    def last_interaction(self, value: datetime.datetime) -> None:
         self._last_interaction = value
 
     @last_action.setter
-    def last_action(self, *, value: str) -> None:
+    def last_action(self, value: str) -> None:
         self._last_action = value
 
     @is_afk.setter
-    def is_afk(self, *, value: bool) -> None:
+    def is_afk(self, value: bool) -> None:
         self._is_afk = value
 
     @afk_duration.setter
-    def afk_duration(self, *, value: int) -> None:
+    def afk_duration(self, value: int) -> None:
         self._afk_duration = value
 
     @afk_start.setter
-    def afk_start(self, *, value: datetime.datetime) -> None:
+    def afk_start(self, value: datetime.datetime) -> None:
         self._afk_start = value
 
     @is_dead.setter
-    def is_dead(self, *, value: bool) -> None:
+    def is_dead(self, value: bool) -> None:
         self._is_dead = value
 
     ### ####### ###
@@ -237,7 +262,7 @@ class Pet:
     @staticmethod
     def _get_modifier(*, x: int, L: int, U: int, MN: float, MP: float, is_positive: bool) -> float:
         """
-        A cselekvések sikerességét befolyásoló faktorok számítása.
+        A dolgok sikerességét eldöntő mindenség
 
         :param x: int - az adott stat értéke (energy, mood, hygiene, hunger, thirst, lonely)
         :param L: int - az alsó határ - ha x < L, akkor a modifier +
@@ -249,20 +274,20 @@ class Pet:
         :return: float - a modifier értéke (-1 és 1 között) - ha x < L, akkor -MN, ha x > U, akkor +MN, egyébként 0
         """
 
-        if is_positive: # energy, mood, hygiene
+        if is_positive:  # energy, mood, hygiene
             if x < L:
                 return -MN * (1 - x / L)  # x=0 → -MN, x=L → 0
             elif x > U:
                 return MP * (x - U) / (100 - U)  # x=U → 0, x=100 → MP
             else:
-                return 0 # L ≤ x ≤ U
-        else: # hunger, thirst, lonely
+                return 0  # L ≤ x ≤ U
+        else:  # hunger, thirst, lonely
             if x < L:
                 return MP * (L - x) / L  # x=0 → +MP, x=L → 0
             elif x > U:
                 return -MN * (x - U) / (100 - U)  # x=U → 0, x=100 → -MN
             else:
-                return 0 # L ≤ x ≤ U
+                return 0  # L ≤ x ≤ U
 
     def rnd(self, *, starting_chance: float) -> bool:
         """
@@ -274,19 +299,99 @@ class Pet:
         """
         total_modifier: float = 0.0
 
-        total_modifier += self._get_modifier(x=self._energy, L=50, U=90, MN=0.2, MP=0.1, is_positive=True) # energy; 50-90
-        total_modifier += self._get_modifier(x=self._mood, L=20, U=70, MN=0.3, MP=0.15, is_positive=True) # mood; 20-70
-        total_modifier += self._get_modifier(x=self._hygiene, L=30, U=70, MN=0.25, MP=0.1, is_positive=True) # hygiene; 30-70
+        total_modifier += self._get_modifier(x=self._energy, L=50, U=90, MN=0.2, MP=0.1,
+                                             is_positive=True)  # energy; 50-90
+        total_modifier += self._get_modifier(x=self._mood, L=20, U=70, MN=0.3, MP=0.15, is_positive=True)  # mood; 20-70
+        total_modifier += self._get_modifier(x=self._hygiene, L=30, U=70, MN=0.25, MP=0.1,
+                                             is_positive=True)  # hygiene; 30-70
 
-        total_modifier += self._get_modifier(x=self._hunger, L=30, U=70, MN=0.2, MP=0.1, is_positive=False) # hunger; 30-70
-        total_modifier += self._get_modifier(x=self._thirst, L=30, U=70, MN=0.2, MP=0.1, is_positive=False) # thirst; 30-70
-        total_modifier += self._get_modifier(x=self._lonely, L=30, U=70, MN=0.15, MP=0.05, is_positive=False) # lonely; 30-70
+        total_modifier += self._get_modifier(x=self._hunger, L=30, U=70, MN=0.2, MP=0.1,
+                                             is_positive=False)  # hunger; 30-70
+        total_modifier += self._get_modifier(x=self._thirst, L=30, U=70, MN=0.2, MP=0.1,
+                                             is_positive=False)  # thirst; 30-70
+        total_modifier += self._get_modifier(x=self._lonely, L=30, U=70, MN=0.15, MP=0.05,
+                                             is_positive=False)  # lonely; 30-70
 
-        final_chance = max(0.0, min(1.0, starting_chance + total_modifier)) # 0 ≤ final_chance ≤ 1; ha < 0, akkor 0, ha > 1, akkor 1
+        final_chance = max(0.0, min(1.0,
+                                    starting_chance + total_modifier))  # 0 ≤ final_chance ≤ 1; ha < 0, akkor 0, ha > 1, akkor 1
         return random.random() < final_chance
 
-    def work(self) -> Dict:
-        pass
+    def work(self, *, type: str) -> Dict:
+        outcome: Dict = {}
+
+        if type == "dj":
+            base_chance: float = 0.5
+            success: bool = self.rnd(starting_chance=base_chance)
+
+            if success:
+                money: int = random.randint(1200, 1600)
+                energy: int = -(random.randint(10, 20))
+                mood: int = -(random.randint(5, 10))
+                lonely: int = random.randint(2, 5)
+                hunger: int = random.randint(2, 10)
+                thirst: int = random.randint(2, 10)
+                hygiene: int = -(random.randint(5, 10))
+                dj_set: int = -(random.randint(1, 5))
+            else:
+                money: int = random.randint(200, 350)
+                energy: int = -(random.randint(15, 30))
+                mood: int = -(random.randint(10, 20))
+                lonely: int = random.randint(5, 10)
+                hunger: int = random.randint(2, 10)
+                thirst: int = random.randint(2, 10)
+                hygiene: int = -(random.randint(5, 10))
+                dj_set: int = -(random.randint(3, 10))
+        else:
+            base_chance: float = 0.3
+            success: bool = self.rnd(starting_chance=base_chance)
+
+            if success:
+                money: int = random.randint(200, 500)
+                energy: int = -(random.randint(10, 20))
+                mood: int = -(random.randint(5, 10))
+                lonely: int = random.randint(2, 5)
+                hunger: int = random.randint(2, 10)
+                thirst: int = random.randint(2, 10)
+                hygiene: int = -(random.randint(5, 10))
+
+            else:
+                money: int = random.randint(50, 150)
+                energy: int = -(random.randint(15, 30))
+                mood: int = -(random.randint(10, 20))
+                lonely: int = random.randint(5, 10)
+                hunger: int = random.randint(2, 10)
+                thirst: int = random.randint(2, 10)
+                hygiene: int = -(random.randint(5, 10))
+
+        outcome["money"] = money
+        outcome["energy"] = energy
+        outcome["mood"] = mood
+        outcome["lonely"] = lonely
+        outcome["hunger"] = hunger
+        outcome["thirst"] = thirst
+        outcome["hygiene"] = hygiene
+        outcome["dj_set"] = dj_set if type == "dj" else None
+
+        self.money += money
+        self.energy += energy
+        self.mood += mood
+        self.lonely += lonely
+        self.hunger += hunger
+        self.thirst += thirst
+        self.hygiene += hygiene
+        self.last_action = "work"
+        self.last_interaction = datetime.datetime.now()
+        self.last_update = datetime.datetime.now()
+
+        petai: PetAI = PetAI()
+
+        message: str = petai.text_response(type="work", sub_type="dj" if type == "dj" else "side_job", success=success, got_item=None, lost_item=None, amount=None)
+        self.save(data=self.rebuild_dict())
+        return {
+            "success": success,
+            "outcome": outcome,
+            "message": message
+        }
 
     def party(self) -> Dict:
         pass
@@ -449,6 +554,35 @@ class Pet:
         self.save(data=data)
         return data
 
+    def rebuild_dict(self) -> Dict:
+        return {
+            "dc_id": self._dc_id,
+            "dc_name": self._dc_name,
+            "age_days": self._age,
+            "money": self._money,
+            "energy": self._energy,
+            "mood": self._mood,
+            "hunger": self._hunger,
+            "thirst": self._thirst,
+            "hygiene": self._hygiene,
+            "friends": self._friends,
+            "lonely": self._lonely,
+            "inventory": self._inventory.get_in_dict(),
+            "stock": self._stock.get_in_dict(),
+            "last_update": self._last_update.strftime("%Y-%m-%d %H:%M:%S"),
+            "last_interaction": self._last_interaction.strftime("%Y-%m-%d %H:%M:%S"),
+            "daily_limits": self._daily_limits,
+            "current_mission": self._current_mission,
+            "completed_missions": self._completed_missions,
+            "achievements": self._achievements,
+            "effects": self._effects,
+            "last_action": self._last_action,
+            "is_afk": self._is_afk,
+            "afk_duration": self._afk_duration,
+            "afk_start": self._afk_start.strftime("%Y-%m-%d %H:%M:%S") if self._afk_start else None,
+            "is_dead": self._is_dead
+        }
+
     def load_data(self, *, user_id: str, user_name: str) -> Dict:
         all_data: Dict = FILE_READER.read_json(file_name=PET_FILE)
         if not all_data:
@@ -462,6 +596,13 @@ class Pet:
         return all_data[user_id]
 
     @staticmethod
+    def load_every_pet() -> Dict:
+        all_data: Dict = FILE_READER.read_json(file_name=PET_FILE)
+        if not all_data:
+            all_data = {}
+        return all_data
+
+    @staticmethod
     def parse_datetime(dt_str: Optional[str]) -> datetime.datetime:
         if not dt_str:
             return datetime.datetime.now()
@@ -471,17 +612,43 @@ class Pet:
             return datetime.datetime.strptime(dt_str, "%Y-%m-%d-%H:%M:%S")
 
 
+def register(*, user_id: str, user_name: str) -> Dict:
+    return Pet(discord_user_id=user_id, user_name=user_name).generate_pet(user_id=user_id, user_name=user_name)
+
+
 if __name__ == '__main__':
     id: str = "696657530537115669"
     name: str = "__z0l1__"
 
     pet: Pet = Pet(discord_user_id=id, user_name=name)
-    print(pet.age)
-    print(pet.money)
-    print(pet.inventory.inventory)
 
-    print(pet.rnd(starting_chance=0.5))
-    print(pet.rnd(starting_chance=0.1))
-    print(pet.rnd(starting_chance=0.9))
-    print(pet.rnd(starting_chance=0.5))
-    print(pet.rnd(starting_chance=0.8))
+    print(pet.money)
+    print(pet.energy)
+    print(pet.mood)
+    print(pet.hunger)
+    print(pet.thirst)
+    print(pet.hygiene)
+
+    print("-" * 50 + "\n" + "-" * 50)
+
+    print(pet.work(type="dj"))
+    print("-" * 50)
+    print(pet.money)
+    print(pet.energy)
+    print(pet.mood)
+    print(pet.hunger)
+    print(pet.thirst)
+    print(pet.hygiene)
+
+    print("-" * 50 + "\n" + "-" * 50 + "\n" + "-" * 50)
+
+    print(pet.work(type="work"))
+    print("-" * 50)
+    print(pet.money)
+    print(pet.energy)
+    print(pet.mood)
+    print(pet.hunger)
+    print(pet.thirst)
+    print(pet.hygiene)
+
+    print("-" * 50 + "\n" + "-" * 50 + "\n" + "-" * 50)

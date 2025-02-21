@@ -1,91 +1,137 @@
 {
-  "696657530537115669": {
-    "dc_id": "696657530537115669",
-    "dc_name": "__z0l1__",
-    "age_days": 5,
-    "money": 300,
-    "cash": 100,
-    "savings": 200,
-    "energy": 100,
-    "mood": 10,
-    "hunger": 70,
-    "thirst": 40,
-    "hygiene": 50,
-    "friends": [
-      "1"
-    ],
-    "lonely": 30,
-    "inventory": {
-      "items": [
-        {
-          "1": {
-            "amount": 2
-          }
-        }
-      ],
-      "equipped": [
-        {
-          "head": null,
-          "body": "1",
-          "arms": null,
-          "legs": null,
-          "feet": null,
-          "accessory": null
-        }
-      ]
-    },
-    "stock": {
-      "portfolio": [
-        {
-          "1": {
-            "quantity": 10,
-            "invested_dates": [
-              [
-                "2021-01-01",
-                100
-              ],
-              [
-                "2021-01-02",
-                200
-              ]
+    "696657530537115669": {
+        "dc_id": "696657530537115669",
+        "dc_name": "__z0l1__",
+        "age_days": 5,
+        "money": 300,
+        "cash": 100,
+        "savings": 200,
+        "energy": 100,
+        "mood": 10,
+        "hunger": 70,
+        "thirst": 40,
+        "hygiene": 50,
+        "friends": [
+            "1"
+        ],
+        "lonely": 30,
+        "inventory": {
+            "items": [
+                {
+                    "1": {
+                        "amount": 2
+                    }
+                }
             ],
-            "invested_value": 300,
-            "current_value": 400,
-            "whithdraw_dates": [
-              [
-                "2021-01-03",
-                400
-              ]
+            "equipped": [
+                {
+                    "head": null,
+                    "body": "1",
+                    "arms": null,
+                    "legs": null,
+                    "feet": null,
+                    "accessory": null
+                }
             ]
-          }
-        }
-      ]
+        },
+        "stock": {
+            "portfolio": [
+                {
+                    "1": {
+                        "quantity": 10,
+                        "invested_dates": [
+                            [
+                                "2021-01-01",
+                                100
+                            ],
+                            [
+                                "2021-01-02",
+                                200
+                            ]
+                        ],
+                        "invested_value": 300,
+                        "current_value": 400,
+                        "whithdraw_dates": [
+                            [
+                                "2021-01-03",
+                                400
+                            ]
+                        ]
+                    }
+                }
+            ]
+        },
+        "last_update": "2025-02-17-10:00:00",
+        "last_interaction": "2025-02-17-12:00:00",
+        "daily_limits": {
+            "work": 3,
+            "sleep": 2,
+            "relax": 2,
+            "party": 1,
+            "steal": 2,
+            "bath": 2
+        },
+        "current_mission_id": "2",
+        "completed_mission_ids": [
+            "1"
+        ],
+        "achievements": [
+            "1",
+            "2"
+        ],
+        "effects": [
+            "1"
+        ],
+        "last_action": "work",
+        "is_afk": false,
+        "afk_duration": 0,
+        "afk_start": null,
+        "is_dead": false
     },
-    "last_update": "2025-02-17-10:00:00",
-    "last_interaction": "2025-02-17-12:00:00",
-    "daily_limits": {
-      "work": 3,
-      "sleep": 2,
-      "relax": 2,
-      "party": 1,
-      "steal": 2,
-      "bath": 2
-    },
-    "current_mission_id": "2",
-    "completed_mission_ids": [
-      "1"
-    ],
-    "achievements": [
-      "1",
-      "2"
-    ],
-    "effects": [
-      "1"
-    ],
-    "last_action": "work",
-    "is_afk": false,
-    "afk_duration": 0,
-    "afk_start": null,
-    "is_dead": false
-  }
+    "1w23": {
+        "dc_id": "1w23",
+        "dc_name": "__z0l1__",
+        "age_days": 1,
+        "money": 1500,
+        "energy": 100,
+        "mood": 100,
+        "hunger": 100,
+        "thirst": 100,
+        "hygiene": 100,
+        "friends": [],
+        "lonely": 0,
+        "inventory": {
+            "items": [],
+            "equipped": {
+                "head": "",
+                "body": "",
+                "arms": "",
+                "legs": "",
+                "feet": "",
+                "accessory": ""
+            }
+        },
+        "stock": {
+            "portfolio": []
+        },
+        "last_update": "2025-02-21 18:20:03",
+        "last_interaction": "2025-02-21 18:20:03",
+        "daily_limits": {
+            "work": 3,
+            "sleep": 2,
+            "relax": 2,
+            "party": 1,
+            "steal": 2,
+            "bath": 2
+        },
+        "current_mission_id": "",
+        "completed_mission_ids": [],
+        "achievements": [],
+        "effects": [],
+        "last_action": "",
+        "is_afk": false,
+        "afk_duration": 0,
+        "afk_start": null,
+        "is_dead": false
+    }
 }

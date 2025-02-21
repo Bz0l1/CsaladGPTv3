@@ -29,7 +29,6 @@ TYPES_ROLES: Dict[str, Any] = {
 
 class PetAI:
     def __init__(self) -> None:
-        self.type: str = type
         self.openai: OpenAI = OpenAI(api_key=FILE_READER.get_token(token_name=TOKENS[0]))
 
     @retry(
@@ -41,7 +40,7 @@ class PetAI:
     def text_response(self, *, type: str, sub_type: Optional[str] = None, success: bool, got_item: Optional[str],
                  lost_item: Optional[str], amount: Optional[int]) -> str:
         try:
-            if self.type in ["work"]:
+            if type in ["work"]:
                 instruction: str = f"{BASE_PROMPT_1} {SETTINGS} {BONUS}"
 
                 if got_item or lost_item:
